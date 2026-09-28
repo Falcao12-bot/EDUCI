@@ -1,0 +1,6 @@
+{
+  "name": "EduCI",
+  "description": "Plateforme éducative ivoirienne pour apprendre, progresser et réussir du primaire au lycée avec cours, exercices, examens et IA.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
