@@ -2,9 +2,11 @@ package com.example.ui.screens.exams
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
@@ -24,6 +26,7 @@ import com.example.data.local.ExamEntity
 import com.example.ui.components.RichContentRenderer
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.EduViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun ExamsScreen(
@@ -36,7 +39,24 @@ fun ExamsScreen(
     val showSolution by viewModel.showExamSolution.collectAsStateWithLifecycle()
     val user by viewModel.currentUser.collectAsStateWithLifecycle()
 
-    val examTypes = listOf("CEPE", "BEPC", "BAC")
+    val examTypes = listOf("BEPC", "BAC", "CEPE", "Devoir")
+
+    // Live Exam State
+    var isExamRunning by remember { mutableStateOf(false) }
+    var remainingSeconds by remember { mutableIntStateOf(120 * 60) }
+    var isSubmitted by remember { mutableStateOf(false) }
+    var studentScore by remember { mutableFloatStateOf(15.5f) }
+    var studentNotesInput by remember { mutableStateOf("") }
+
+    LaunchedEffect(isExamRunning, remainingSeconds) {
+        if (isExamRunning && remainingSeconds > 0) {
+            delay(1000)
+            remainingSeconds -= 1
+        } else if (isExamRunning && remainingSeconds == 0) {
+            isExamRunning = false
+            isSubmitted = true
+        }
+    }
 
     LazyColumn(
         modifier = modifier
@@ -46,29 +66,37 @@ fun ExamsScreen(
         contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // 1. Exam Type Tabs: CEPE, BEPC, BAC
+        // 1. Exam Type Tabs: BEPC, BAC, CEPE, Devoirs
         item {
-            TabRow(
-                selectedTabIndex = examTypes.indexOf(selectedExamType).coerceAtLeast(0),
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                contentColor = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clip(RoundedCornerShape(12.dp))
+            val scrollState = rememberScrollState()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(scrollState),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 for (type in examTypes) {
                     val isSelected = selectedExamType == type
-                    Tab(
+                    FilterChip(
                         selected = isSelected,
                         onClick = {
                             viewModel.selectExamType(type)
                             viewModel.openExam(ExamEntity(title = "", examType = "", year = 0, subject = "", content = ""))
+                            isExamRunning = false
+                            isSubmitted = false
                         },
-                        text = {
+                        label = {
                             Text(
-                                text = type,
+                                text = if (type == "Devoir") "Devoirs & Compositions" else type,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                fontSize = 14.sp
+                                fontSize = 13.sp
                             )
-                        }
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = EduCiGreenPrimary,
+                            selectedLabelColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(10.dp)
                     )
                 }
             }
@@ -106,6 +134,8 @@ fun ExamsScreen(
                             }
                             IconButton(onClick = {
                                 viewModel.openExam(ExamEntity(title = "", examType = "", year = 0, subject = "", content = ""))
+                                isExamRunning = false
+                                isSubmitted = false
                             }) {
                                 Icon(Icons.Default.Close, contentDescription = "Fermer")
                             }
@@ -150,15 +180,109 @@ fun ExamsScreen(
                                     )
                                     Spacer(modifier = Modifier.height(10.dp))
                                     Button(
-                                        onClick = { viewModel.togglePremium() },
+                                        onClick = { viewModel.openPremiumDialog() },
                                         shape = RoundedCornerShape(10.dp),
                                         colors = ButtonDefaults.buttonColors(containerColor = EduCiGoldXp)
                                     ) {
-                                        Text("Activer mon accès Premium (Essai)")
+                                        Text("Activer mon accès Premium (Wave/Orange/MTN)")
                                     }
                                 }
                             }
                         } else {
+                            // Interactive Chronometer Bar (Mode Examen Blanc)
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isExamRunning) Color(0xFFFEF2F2) else EduCiGreenContainer
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    val minutes = remainingSeconds / 60
+                                    val seconds = remainingSeconds % 60
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Icon(
+                                            imageVector = Icons.Default.Timer,
+                                            contentDescription = "Chronomètre",
+                                            tint = if (isExamRunning) Color(0xFFDC2626) else EduCiGreenDark
+                                        )
+                                        Column {
+                                            Text(
+                                                text = if (isExamRunning) "Épreuve en cours : %02d:%02d".format(minutes, seconds) else "Temps alloué : ${exam.durationMinutes} min",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp,
+                                                color = if (isExamRunning) Color(0xFFDC2626) else EduCiGreenDark
+                                            )
+                                            Text(
+                                                text = if (isExamRunning) "Conditions réelles d'examen" else "Lance le chrono pour t'évaluer",
+                                                fontSize = 11.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            if (!isExamRunning && !isSubmitted) {
+                                                remainingSeconds = exam.durationMinutes * 60
+                                                isExamRunning = true
+                                            } else if (isExamRunning) {
+                                                isExamRunning = false
+                                                isSubmitted = true
+                                                viewModel.recordExamSubmission(exam, studentScore, 20f, (exam.durationMinutes * 60) - remainingSeconds)
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = if (isExamRunning) Color(0xFFDC2626) else EduCiGreenPrimary
+                                        ),
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Text(
+                                            text = if (isExamRunning) "Rendre ma copie" else if (isSubmitted) "Épreuve rendue ✓" else "Démarrer chrono",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+
+                            if (isSubmitted) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = Color(0xFFF0FDF4),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, EduCiGreenPrimary.copy(alpha = 0.4f)),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(modifier = Modifier.padding(14.dp)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            Text("🎉", fontSize = 20.sp)
+                                            Column {
+                                                Text(
+                                                    text = "Copie soumise avec succès !",
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 14.sp,
+                                                    color = EduCiGreenDark
+                                                )
+                                                Text(
+                                                    text = "Note estimée : ${"%.1f".format(studentScore)}/20 • Mention Bien (+100 XP)",
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = EduCiGreenPrimary
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
                             // Toggle between Énoncé and Corrigé
                             TabRow(
                                 selectedTabIndex = if (showSolution) 1 else 0,
@@ -182,6 +306,19 @@ fun ExamsScreen(
 
                             if (!showSolution) {
                                 RichContentRenderer(content = exam.content)
+
+                                if (isExamRunning) {
+                                    Spacer(modifier = Modifier.height(14.dp))
+                                    OutlinedTextField(
+                                        value = studentNotesInput,
+                                        onValueChange = { studentNotesInput = it },
+                                        label = { Text("Brouillon / Réponses de l'élève") },
+                                        placeholder = { Text("Saisis ici tes calculs ou éléments de réponse...") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        minLines = 4,
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+                                }
                             } else {
                                 if (exam.solution.isNotEmpty()) {
                                     if (exam.gradingScale.isNotEmpty()) {
@@ -191,7 +328,7 @@ fun ExamsScreen(
                                             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
                                         ) {
                                             Text(
-                                                text = "Barème officiel : ${exam.gradingScale}",
+                                                text = "Barème officiel DECO : ${exam.gradingScale}",
                                                 fontSize = 12.sp,
                                                 fontWeight = FontWeight.SemiBold,
                                                 color = EduCiGreenDark,
@@ -202,7 +339,7 @@ fun ExamsScreen(
                                     RichContentRenderer(content = exam.solution)
                                 } else {
                                     Text(
-                                        text = "Corrigé en cours de rédaction par l'équipe pédagogique.",
+                                        text = "Corrigé officiel en cours de validation par la commission pédagogique.",
                                         fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )

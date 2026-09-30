@@ -12,6 +12,9 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE email = :email LIMIT 1")
     suspend fun getUserByEmail(email: String): UserEntity?
 
+    @Query("SELECT * FROM users WHERE email = :identifier OR phoneNumber = :identifier LIMIT 1")
+    suspend fun getUserByEmailOrPhone(identifier: String): UserEntity?
+
     @Query("SELECT * FROM users WHERE id = :userId LIMIT 1")
     fun getUserById(userId: Long): Flow<UserEntity?>
 
@@ -29,6 +32,9 @@ interface UserDao {
 
     @Query("UPDATE users SET isPremium = :isPremium WHERE id = :userId")
     suspend fun updatePremiumStatus(userId: Long, isPremium: Boolean)
+
+    @Query("UPDATE users SET isSuspended = :isSuspended WHERE id = :userId")
+    suspend fun setSuspendedStatus(userId: Long, isSuspended: Boolean)
 
     @Query("UPDATE users SET xp = xp + :points, studyTimeMinutes = studyTimeMinutes + :minutes WHERE id = :userId")
     suspend fun addXpAndStudyTime(userId: Long, points: Int, minutes: Int)
@@ -77,6 +83,9 @@ interface CourseDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSubjects(subjects: List<SubjectEntity>)
 
+    @Query("DELETE FROM subjects WHERE id = :subjectId")
+    suspend fun deleteSubject(subjectId: Long)
+
     // Chapters
     @Query("SELECT * FROM chapters WHERE subjectId = :subjectId AND (classId = :classId OR classId = 'all') ORDER BY orderIndex ASC")
     fun getChapters(subjectId: Long, classId: String): Flow<List<ChapterEntity>>
@@ -92,6 +101,9 @@ interface CourseDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertChapters(chapters: List<ChapterEntity>)
+
+    @Query("DELETE FROM chapters WHERE id = :chapterId")
+    suspend fun deleteChapter(chapterId: Long)
 
     // Lessons
     @Query("SELECT * FROM lessons WHERE chapterId = :chapterId AND isDraft = 0 ORDER BY id ASC")
@@ -261,4 +273,73 @@ interface DraftBackupDao {
 
     @Query("DELETE FROM draft_backups WHERE draftKey = :key")
     suspend fun clearDraft(key: String)
+}
+
+@Dao
+interface FavoriteDao {
+    @Query("SELECT * FROM favorites WHERE userId = :userId ORDER BY createdAt DESC")
+    fun getFavoritesByUser(userId: Long): Flow<List<FavoriteEntity>>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM favorites WHERE userId = :userId AND itemType = :itemType AND itemId = :itemId)")
+    fun isFavorite(userId: Long, itemType: String, itemId: Long): Flow<Boolean>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun addFavorite(favorite: FavoriteEntity): Long
+
+    @Query("DELETE FROM favorites WHERE userId = :userId AND itemType = :itemType AND itemId = :itemId")
+    suspend fun removeFavorite(userId: Long, itemType: String, itemId: Long)
+
+    @Query("SELECT COUNT(*) FROM favorites WHERE userId = :userId")
+    fun countFavorites(userId: Long): Flow<Int>
+}
+
+@Dao
+interface OfflineDownloadDao {
+    @Query("SELECT * FROM offline_downloads WHERE userId = :userId ORDER BY downloadedAt DESC")
+    fun getDownloadsByUser(userId: Long): Flow<List<OfflineDownloadEntity>>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM offline_downloads WHERE userId = :userId AND itemType = :itemType AND itemId = :itemId)")
+    fun isDownloaded(userId: Long, itemType: String, itemId: Long): Flow<Boolean>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun addDownload(download: OfflineDownloadEntity): Long
+
+    @Query("DELETE FROM offline_downloads WHERE userId = :userId AND itemType = :itemType AND itemId = :itemId")
+    suspend fun removeDownload(userId: Long, itemType: String, itemId: Long)
+
+    @Query("DELETE FROM offline_downloads WHERE userId = :userId")
+    suspend fun clearAllDownloads(userId: Long)
+
+    @Query("SELECT COUNT(*) FROM offline_downloads WHERE userId = :userId")
+    fun countDownloads(userId: Long): Flow<Int>
+}
+
+@Dao
+interface PaymentDao {
+    @Query("SELECT * FROM payment_transactions WHERE userId = :userId ORDER BY createdAt DESC")
+    fun getTransactionsByUser(userId: Long): Flow<List<PaymentTransactionEntity>>
+
+    @Query("SELECT * FROM payment_transactions ORDER BY createdAt DESC")
+    fun getAllTransactions(): Flow<List<PaymentTransactionEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTransaction(transaction: PaymentTransactionEntity): Long
+
+    @Query("SELECT COUNT(*) FROM payment_transactions WHERE status = 'VALIDEE'")
+    fun countCompletedTransactions(): Flow<Int>
+}
+
+@Dao
+interface ExamSubmissionDao {
+    @Query("SELECT * FROM exam_submissions WHERE userId = :userId ORDER BY submittedAt DESC")
+    fun getSubmissionsByUser(userId: Long): Flow<List<ExamSubmissionEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSubmission(submission: ExamSubmissionEntity): Long
+
+    @Query("SELECT COUNT(*) FROM exam_submissions WHERE userId = :userId")
+    fun countUserSubmissions(userId: Long): Flow<Int>
+
+    @Query("SELECT AVG(score) FROM exam_submissions WHERE userId = :userId")
+    fun getAverageExamScore(userId: Long): Flow<Float?>
 }

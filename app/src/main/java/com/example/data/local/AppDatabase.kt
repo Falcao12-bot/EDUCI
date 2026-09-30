@@ -19,9 +19,13 @@ import androidx.room.RoomDatabase
         UserExerciseAttemptEntity::class,
         NotificationEntity::class,
         AdminLogEntity::class,
-        DraftBackupEntity::class
+        DraftBackupEntity::class,
+        FavoriteEntity::class,
+        OfflineDownloadEntity::class,
+        PaymentTransactionEntity::class,
+        ExamSubmissionEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -32,6 +36,10 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun notificationDao(): NotificationDao
     abstract fun adminLogDao(): AdminLogDao
     abstract fun draftBackupDao(): DraftBackupDao
+    abstract fun favoriteDao(): FavoriteDao
+    abstract fun offlineDownloadDao(): OfflineDownloadDao
+    abstract fun paymentDao(): PaymentDao
+    abstract fun examSubmissionDao(): ExamSubmissionDao
 
     companion object {
         @Volatile

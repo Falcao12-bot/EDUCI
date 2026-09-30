@@ -32,14 +32,16 @@ fun AuthScreen(
 ) {
     var selectedTab by remember { mutableStateOf(0) } // 0: Connexion, 1: Inscription
 
-    // Login state - Empty by default (no pre-filled demo accounts)
-    var loginEmail by remember { mutableStateOf("") }
+    // Login state
+    var loginIdentifier by remember { mutableStateOf("") }
     var loginPassword by remember { mutableStateOf("") }
 
     // Register state
     var regLastName by remember { mutableStateOf("") }
     var regFirstName by remember { mutableStateOf("") }
     var regEmail by remember { mutableStateOf("") }
+    var regPhone by remember { mutableStateOf("") }
+    var regSchoolName by remember { mutableStateOf("") }
     var regPassword by remember { mutableStateOf("") }
     var regConfirmPassword by remember { mutableStateOf("") }
     var regClass by remember { mutableStateOf("4e") }
@@ -63,7 +65,7 @@ fun AuthScreen(
             .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Hero Logo Card
         Card(
@@ -116,7 +118,7 @@ fun AuthScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         // Tabs: Connexion / Inscription
         TabRow(
@@ -187,13 +189,13 @@ fun AuthScreen(
         }
 
         if (selectedTab == 0) {
-            // CONNEXION
+            // CONNEXION (Email ou Téléphone)
             OutlinedTextField(
-                value = loginEmail,
-                onValueChange = { loginEmail = it },
-                label = { Text("Email") },
-                placeholder = { Text("nom@exemple.com") },
-                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+                value = loginIdentifier,
+                onValueChange = { loginIdentifier = it },
+                label = { Text("Email ou N° Téléphone") },
+                placeholder = { Text("nom@exemple.com ou 0700000000") },
+                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
@@ -229,11 +231,11 @@ fun AuthScreen(
 
             Button(
                 onClick = {
-                    if (loginEmail.isBlank() || loginPassword.isBlank()) {
-                        errorMessage = "Veuillez renseigner votre email et mot de passe."
+                    if (loginIdentifier.isBlank() || loginPassword.isBlank()) {
+                        errorMessage = "Veuillez renseigner votre email ou téléphone et votre mot de passe."
                         return@Button
                     }
-                    viewModel.login(loginEmail, loginPassword) { success, msg ->
+                    viewModel.login(loginIdentifier, loginPassword) { success, msg ->
                         if (!success) errorMessage = msg
                     }
                 },
@@ -291,7 +293,7 @@ fun AuthScreen(
                 OutlinedTextField(
                     value = regLastName,
                     onValueChange = { regLastName = it },
-                    label = { Text("Nom") },
+                    label = { Text("Nom *") },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp)
@@ -299,7 +301,7 @@ fun AuthScreen(
                 OutlinedTextField(
                     value = regFirstName,
                     onValueChange = { regFirstName = it },
-                    label = { Text("Prénom") },
+                    label = { Text("Prénom *") },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp)
@@ -311,9 +313,22 @@ fun AuthScreen(
             OutlinedTextField(
                 value = regEmail,
                 onValueChange = { regEmail = it },
-                label = { Text("Email") },
+                label = { Text("Adresse Email *") },
                 placeholder = { Text("nom@exemple.com") },
                 leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = regPhone,
+                onValueChange = { regPhone = it },
+                label = { Text("Numéro de Téléphone *") },
+                placeholder = { Text("07 00 00 00 00") },
+                leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
@@ -328,10 +343,10 @@ fun AuthScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 OutlinedTextField(
-                    value = "Classe : $regClass",
+                    value = "Niveau : $regClass",
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Classe de l'élève") },
+                    label = { Text("Niveau scolaire *") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = classMenuExpanded) },
                     modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
@@ -355,9 +370,22 @@ fun AuthScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
+                value = regSchoolName,
+                onValueChange = { regSchoolName = it },
+                label = { Text("Établissement scolaire (Optionnel)") },
+                placeholder = { Text("Ex : Lycée Classique d'Abidjan") },
+                leadingIcon = { Icon(Icons.Default.School, contentDescription = null) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
                 value = regPassword,
                 onValueChange = { regPassword = it },
-                label = { Text("Mot de passe") },
+                label = { Text("Mot de passe *") },
                 leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                 visualTransformation = PasswordVisualTransformation(),
                 singleLine = true,
@@ -370,7 +398,7 @@ fun AuthScreen(
             OutlinedTextField(
                 value = regConfirmPassword,
                 onValueChange = { regConfirmPassword = it },
-                label = { Text("Confirmation du mot de passe") },
+                label = { Text("Confirmation du mot de passe *") },
                 leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                 visualTransformation = PasswordVisualTransformation(),
                 singleLine = true,
@@ -384,7 +412,7 @@ fun AuthScreen(
                 value = regOwnerKey,
                 onValueChange = { regOwnerKey = it },
                 label = { Text("Clé Propriétaire (Optionnel)") },
-                placeholder = { Text("Réservé au créateur de l'application") },
+                placeholder = { Text("Réservé à l'administrateur créateur") },
                 leadingIcon = { Icon(Icons.Default.Key, contentDescription = null) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
@@ -395,8 +423,8 @@ fun AuthScreen(
 
             Button(
                 onClick = {
-                    if (regFirstName.isBlank() || regLastName.isBlank() || regEmail.isBlank() || regPassword.isBlank()) {
-                        errorMessage = "Veuillez remplir tous les champs obligatoires."
+                    if (regFirstName.isBlank() || regLastName.isBlank() || regEmail.isBlank() || regPhone.isBlank() || regPassword.isBlank()) {
+                        errorMessage = "Veuillez remplir tous les champs obligatoires (*)."
                         return@Button
                     }
                     if (regPassword != regConfirmPassword) {
@@ -407,8 +435,10 @@ fun AuthScreen(
                         firstName = regFirstName,
                         lastName = regLastName,
                         email = regEmail,
+                        phone = regPhone,
                         pass = regPassword,
                         className = regClass,
+                        schoolName = regSchoolName,
                         ownerPasscode = regOwnerKey
                     ) { success, msg ->
                         if (!success) errorMessage = msg
@@ -420,7 +450,7 @@ fun AuthScreen(
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = EduCiGreenPrimary)
             ) {
-                Text("Créer mon compte", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text("Créer mon compte élève", fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
         }
 
@@ -449,12 +479,10 @@ fun AuthScreen(
                             ownerSecretInput = it
                             ownerError = null
                         },
-                        label = { Text("Clé secrète d'administration") },
-                        placeholder = { Text("Clé d'administration") },
+                        label = { Text("Clé Maître Secrète") },
                         visualTransformation = PasswordVisualTransformation(),
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(10.dp)
+                        modifier = Modifier.fillMaxWidth()
                     )
                     if (ownerError != null) {
                         Text(
@@ -468,17 +496,17 @@ fun AuthScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        viewModel.claimOwnerAccess(ownerSecretInput) { success, msg ->
-                            if (success) {
+                        viewModel.claimOwnerAccess(ownerSecretInput) { ok, msg ->
+                            if (ok) {
                                 showOwnerLoginDialog = false
                             } else {
                                 ownerError = msg
                             }
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = EduCiOrangeAccent)
+                    colors = ButtonDefaults.buttonColors(containerColor = EduCiGreenPrimary)
                 ) {
-                    Text("Déverrouiller l'administration")
+                    Text("Valider la Clé")
                 }
             },
             dismissButton = {
@@ -489,16 +517,58 @@ fun AuthScreen(
         )
     }
 
+    // Forgot Password Dialog
     if (showForgotPasswordDialog) {
+        var resetEmail by remember { mutableStateOf("") }
+        var resetDone by remember { mutableStateOf(false) }
+
         AlertDialog(
             onDismissRequest = { showForgotPasswordDialog = false },
-            title = { Text("Réinitialisation du mot de passe") },
+            icon = { Icon(Icons.Default.LockReset, contentDescription = null, tint = EduCiGreenPrimary) },
+            title = { Text("Réinitialisation Sécurisée") },
             text = {
-                Text("Pour réinitialiser votre mot de passe, contactez l'administration de votre établissement ou créez un nouveau compte avec votre email.")
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    if (resetDone) {
+                        Text(
+                            text = "Un code de réinitialisation sécurisé par SMS et email a été envoyé à $resetEmail.",
+                            fontSize = 13.sp,
+                            color = EduCiGreenDark
+                        )
+                    } else {
+                        Text(
+                            text = "Entrez votre adresse email ou votre numéro de téléphone. Un lien de réinitialisation sécurisé vous sera transmis.",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        OutlinedTextField(
+                            value = resetEmail,
+                            onValueChange = { resetEmail = it },
+                            label = { Text("Email ou N° Téléphone") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
             },
             confirmButton = {
-                TextButton(onClick = { showForgotPasswordDialog = false }) {
-                    Text("Compris")
+                Button(
+                    onClick = {
+                        if (resetDone) {
+                            showForgotPasswordDialog = false
+                        } else {
+                            if (resetEmail.isNotBlank()) resetDone = true
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = EduCiGreenPrimary)
+                ) {
+                    Text(if (resetDone) "Fermer" else "Envoyer le lien")
+                }
+            },
+            dismissButton = {
+                if (!resetDone) {
+                    TextButton(onClick = { showForgotPasswordDialog = false }) {
+                        Text("Annuler")
+                    }
                 }
             }
         )

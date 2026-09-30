@@ -10,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -305,7 +306,7 @@ fun SubjectCard(
                     Icon(
                         imageVector = when (subject.name.lowercase()) {
                             "mathématiques", "maths" -> Icons.Default.Calculate
-                            "français" -> Icons.Default.MenuBook
+                            "français" -> Icons.AutoMirrored.Filled.MenuBook
                             "physique-chimie" -> Icons.Default.Science
                             "svt" -> Icons.Default.Eco
                             "histoire-géographie" -> Icons.Default.Public

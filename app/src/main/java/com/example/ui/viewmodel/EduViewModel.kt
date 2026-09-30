@@ -88,6 +88,14 @@ class EduViewModel(application: Application) : AndroidViewModel(application) {
         .flatMapLatest { cls -> repository.getSubjectsForClass(cls) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // All subjects across all levels
+    val allSubjects: StateFlow<List<SubjectEntity>> = repository.getAllSubjects()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // All chapters across all levels
+    val allChapters: StateFlow<List<ChapterEntity>> = repository.getAllChapters()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     // Exercises
     val exercises: StateFlow<List<ExerciseEntity>> = _selectedClass
         .flatMapLatest { cls -> repository.getExercisesForClass(cls) }
@@ -118,7 +126,7 @@ class EduViewModel(application: Application) : AndroidViewModel(application) {
         listOf(
             ChatMessage(
                 sender = "ai",
-                text = "Bonjour ! Je suis le Professeur EduCI, ton tuteur personnel. Quelle notion ou exercice souhaites-tu travailler ensemble ?"
+                text = "Bonjour ! Je suis le Professeur EduCI, ton tuteur pédagogique personnalisé. Quelle notion, formule ou exercice souhaites-tu travailler aujourd'hui ?"
             )
         )
     )
@@ -134,7 +142,7 @@ class EduViewModel(application: Application) : AndroidViewModel(application) {
     val unreadNotificationsCount: StateFlow<Int> = repository.countUnreadNotifications()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
-    // User Progress
+    // User Progress & Stats
     val userCompletedLessonsCount: StateFlow<Int> = _currentUser
         .flatMapLatest { user ->
             if (user != null) repository.countCompletedLessons(user.id)
@@ -148,6 +156,58 @@ class EduViewModel(application: Application) : AndroidViewModel(application) {
             else flowOf(0)
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val userCorrectAttemptsCount: StateFlow<Int> = _currentUser
+        .flatMapLatest { user ->
+            if (user != null) repository.countUserCorrectAttempts(user.id)
+            else flowOf(0)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    // Exam Submissions
+    val userExamSubmissions: StateFlow<List<ExamSubmissionEntity>> = _currentUser
+        .flatMapLatest { user ->
+            if (user != null) repository.getExamSubmissions(user.id)
+            else flowOf(emptyList())
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val userExamCount: StateFlow<Int> = _currentUser
+        .flatMapLatest { user ->
+            if (user != null) repository.countUserExamSubmissions(user.id)
+            else flowOf(0)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val averageExamScore: StateFlow<Float?> = _currentUser
+        .flatMapLatest { user ->
+            if (user != null) repository.getAverageExamScore(user.id)
+            else flowOf(null)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    // Favorites & Offline Downloads
+    val userFavorites: StateFlow<List<FavoriteEntity>> = _currentUser
+        .flatMapLatest { user ->
+            if (user != null) repository.getFavorites(user.id)
+            else flowOf(emptyList())
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val userOfflineDownloads: StateFlow<List<OfflineDownloadEntity>> = _currentUser
+        .flatMapLatest { user ->
+            if (user != null) repository.getOfflineDownloads(user.id)
+            else flowOf(emptyList())
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Payments
+    val userTransactions: StateFlow<List<PaymentTransactionEntity>> = _currentUser
+        .flatMapLatest { user ->
+            if (user != null) repository.getUserTransactions(user.id)
+            else flowOf(emptyList())
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Search
     private val _searchQuery = MutableStateFlow("")
@@ -192,6 +252,10 @@ class EduViewModel(application: Application) : AndroidViewModel(application) {
     private val _editorDraftRestored = MutableStateFlow(false)
     val editorDraftRestored: StateFlow<Boolean> = _editorDraftRestored.asStateFlow()
 
+    // Premium Subscription Dialog state
+    private val _showPremiumDialog = MutableStateFlow(false)
+    val showPremiumDialog: StateFlow<Boolean> = _showPremiumDialog.asStateFlow()
+
     init {
         viewModelScope.launch {
             // Seed DB (curriculum, classes, subjects, exams)
@@ -226,17 +290,26 @@ class EduViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // Auth
-    fun login(email: String, pass: String, onResult: (Boolean, String) -> Unit) {
+    fun login(identifier: String, pass: String, onResult: (Boolean, String) -> Unit) {
         viewModelScope.launch {
-            val user = repository.getUserByEmail(email.trim().lowercase())
-            if (user != null && user.passwordHash == pass) {
-                _currentUser.value = user
-                _selectedClass.value = user.className
-                _currentScreen.value = if (user.role in listOf("owner", "admin")) AppScreen.ADMIN else AppScreen.HOME
+            val cleanId = identifier.trim().lowercase()
+            val user = repository.getUserByEmailOrPhone(cleanId)
+            val hashedInput = EduRepository.hashPassword(pass)
+
+            if (user != null && (user.passwordHash == pass || user.passwordHash == hashedInput)) {
+                if (user.isSuspended) {
+                    onResult(false, "Ce compte a été suspendu par l'administration EduCI. Veuillez contacter le support.")
+                    return@launch
+                }
+                val updated = user.copy(lastLoginAt = System.currentTimeMillis())
+                repository.updateUser(updated)
+                _currentUser.value = updated
+                _selectedClass.value = updated.className
+                _currentScreen.value = if (updated.role in listOf("owner", "admin")) AppScreen.ADMIN else AppScreen.HOME
                 screenStack.clear()
-                onResult(true, "Connexion réussie")
+                onResult(true, "Connexion réussie ! Bienvenue sur EduCI.")
             } else {
-                onResult(false, "Identifiants invalides")
+                onResult(false, "Identifiants invalides (email/téléphone ou mot de passe incorrect)")
             }
         }
     }
@@ -245,23 +318,30 @@ class EduViewModel(application: Application) : AndroidViewModel(application) {
         firstName: String,
         lastName: String,
         email: String,
+        phone: String,
         pass: String,
         className: String,
+        schoolName: String = "",
         ownerPasscode: String = "",
         onResult: (Boolean, String) -> Unit
     ) {
         viewModelScope.launch {
             val cleanEmail = email.trim().lowercase()
+            val cleanPhone = phone.trim()
             val existing = repository.getUserByEmail(cleanEmail)
             if (existing != null) {
-                onResult(false, "Un compte existe déjà avec cet email")
+                onResult(false, "Un compte existe déjà avec cet email.")
                 return@launch
             }
             val isOwner = cleanEmail == OWNER_EMAIL.lowercase() || ownerPasscode.trim() == OWNER_MASTER_KEY
             val role = if (isOwner) "owner" else "student"
+            val hashedPassword = EduRepository.hashPassword(pass)
+
             val newUser = UserEntity(
                 email = cleanEmail,
-                passwordHash = pass,
+                phoneNumber = cleanPhone,
+                schoolName = schoolName.trim(),
+                passwordHash = hashedPassword,
                 firstName = firstName.trim(),
                 lastName = lastName.trim(),
                 className = if (isOwner) "Direction" else className,
@@ -307,7 +387,7 @@ class EduViewModel(application: Application) : AndroidViewModel(application) {
                     } else {
                         val ownerUser = UserEntity(
                             email = OWNER_EMAIL,
-                            passwordHash = "admin",
+                            passwordHash = EduRepository.hashPassword("admin"),
                             firstName = "Propriétaire",
                             lastName = "EduCI",
                             className = "Direction",
@@ -336,6 +416,14 @@ class EduViewModel(application: Application) : AndroidViewModel(application) {
             val updated = user.copy(isPremium = newPremium)
             _currentUser.value = updated
         }
+    }
+
+    fun openPremiumDialog() {
+        _showPremiumDialog.value = true
+    }
+
+    fun closePremiumDialog() {
+        _showPremiumDialog.value = false
     }
 
     fun logout() {
@@ -393,6 +481,55 @@ class EduViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // Favorites
+    fun isFavorite(itemType: String, itemId: Long): Flow<Boolean> {
+        val userId = _currentUser.value?.id ?: return flowOf(false)
+        return repository.isFavorite(userId, itemType, itemId)
+    }
+
+    fun toggleFavorite(itemType: String, itemId: Long, title: String, subjectName: String, isCurrentlyFav: Boolean) {
+        val userId = _currentUser.value?.id ?: return
+        viewModelScope.launch {
+            if (isCurrentlyFav) {
+                repository.removeFavorite(userId, itemType, itemId)
+            } else {
+                repository.addFavorite(userId, itemType, itemId, title, subjectName)
+            }
+        }
+    }
+
+    // Offline Downloads
+    fun isDownloaded(itemType: String, itemId: Long): Flow<Boolean> {
+        val userId = _currentUser.value?.id ?: return flowOf(false)
+        return repository.isDownloaded(userId, itemType, itemId)
+    }
+
+    fun toggleOfflineDownload(lesson: LessonEntity, isCurrentlyDownloaded: Boolean) {
+        val userId = _currentUser.value?.id ?: return
+        viewModelScope.launch {
+            if (isCurrentlyDownloaded) {
+                repository.removeOfflineDownload(userId, "lesson", lesson.id)
+            } else {
+                repository.addOfflineDownload(
+                    userId = userId,
+                    itemType = "lesson",
+                    itemId = lesson.id,
+                    title = lesson.title,
+                    subjectName = _selectedSubject.value?.name ?: "Cours",
+                    summary = lesson.summary,
+                    content = lesson.content
+                )
+            }
+        }
+    }
+
+    fun clearOfflineCache() {
+        val userId = _currentUser.value?.id ?: return
+        viewModelScope.launch {
+            repository.clearOfflineDownloads(userId)
+        }
+    }
+
     // Exercises
     fun openExercise(exercise: ExerciseEntity) {
         _activeExercise.value = exercise
@@ -443,6 +580,75 @@ class EduViewModel(application: Application) : AndroidViewModel(application) {
         _showExamSolution.value = !_showExamSolution.value
     }
 
+    fun recordExamSubmission(exam: ExamEntity, score: Float, maxScore: Float, timeSpentSeconds: Int) {
+        val user = _currentUser.value ?: return
+        viewModelScope.launch {
+            repository.recordExamSubmission(
+                ExamSubmissionEntity(
+                    userId = user.id,
+                    examId = exam.id,
+                    examTitle = exam.title,
+                    subject = exam.subject,
+                    score = score,
+                    maxScore = maxScore,
+                    timeSpentSeconds = timeSpentSeconds,
+                    isPassed = (score / maxScore) >= 0.5f
+                )
+            )
+            // Reload user
+            val updated = repository.getUserByEmail(user.email)
+            if (updated != null) _currentUser.value = updated
+        }
+    }
+
+    // Payment (Ivorian Mobile Money & Cards)
+    fun processPayment(
+        provider: String,
+        phone: String,
+        planName: String,
+        amountFcfa: Int,
+        durationDays: Int,
+        onResult: (Boolean, String) -> Unit
+    ) {
+        val user = _currentUser.value
+        if (user == null) {
+            onResult(false, "Veuillez vous connecter pour souscrire.")
+            return
+        }
+
+        viewModelScope.launch {
+            val ref = "EDUCI-${provider.take(3).uppercase()}-${System.currentTimeMillis().toString().takeLast(6)}"
+            val transaction = PaymentTransactionEntity(
+                userId = user.id,
+                transactionRef = ref,
+                provider = provider,
+                phoneNumber = phone,
+                amountFcfa = amountFcfa,
+                planName = planName,
+                durationDays = durationDays,
+                status = "VALIDEE",
+                createdAt = System.currentTimeMillis(),
+                expiresAt = System.currentTimeMillis() + (durationDays.toLong() * 24 * 3600 * 1000)
+            )
+            repository.recordPayment(transaction)
+            // Update in-memory user
+            val updated = user.copy(isPremium = true)
+            _currentUser.value = updated
+
+            // Notification
+            repository.insertNotification(
+                NotificationEntity(
+                    title = "Abonnement Premium Activé !",
+                    message = "Félicitations ! Ton abonnement $planName via $provider (Réf: $ref) est actif.",
+                    type = "premium"
+                )
+            )
+
+            _showPremiumDialog.value = false
+            onResult(true, "Paiement de $amountFcfa FCFA validé avec succès via $provider ! Bienvenue en Premium.")
+        }
+    }
+
     // AI Pedagogical Assistant
     fun sendAiMessage(message: String) {
         val cleanMsg = message.trim()
@@ -466,6 +672,15 @@ class EduViewModel(application: Application) : AndroidViewModel(application) {
             _aiMessages.value = _aiMessages.value + ChatMessage(sender = "ai", text = response)
             _isAiLoading.value = false
         }
+    }
+
+    fun clearAiChat() {
+        _aiMessages.value = listOf(
+            ChatMessage(
+                sender = "ai",
+                text = "Bonjour ! Nouvelle session ouverte. Quelle question ou quel exercice souhaites-tu travailler avec moi ?"
+            )
+        )
     }
 
     // Search
@@ -639,6 +854,63 @@ class EduViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun addSubjectAdmin(name: String, classId: String, icon: String, colorHex: String, isExam: Boolean, onSuccess: () -> Unit) {
+        if (!isOwnerOrAdmin()) return
+        viewModelScope.launch {
+            val id = repository.insertSubject(
+                SubjectEntity(
+                    classId = classId,
+                    name = name,
+                    iconName = icon,
+                    colorHex = colorHex,
+                    isNationalExamSubject = isExam
+                )
+            )
+            repository.logAdminAction(
+                adminName = _currentUser.value?.let { "${it.firstName} ${it.lastName}" } ?: "Admin",
+                action = "Création matière",
+                targetItem = "Matière #$id: $name ($classId)"
+            )
+            onSuccess()
+        }
+    }
+
+    fun deleteSubjectAdmin(subjectId: Long, onSuccess: () -> Unit = {}) {
+        if (!isOwnerOrAdmin()) return
+        viewModelScope.launch {
+            repository.deleteSubject(subjectId)
+            onSuccess()
+        }
+    }
+
+    fun addChapterAdmin(subjectId: Long, classId: String, title: String, summary: String, onSuccess: () -> Unit) {
+        if (!isOwnerOrAdmin()) return
+        viewModelScope.launch {
+            val id = repository.insertChapter(
+                ChapterEntity(
+                    subjectId = subjectId,
+                    classId = classId,
+                    title = title,
+                    summary = summary
+                )
+            )
+            repository.logAdminAction(
+                adminName = _currentUser.value?.let { "${it.firstName} ${it.lastName}" } ?: "Admin",
+                action = "Création chapitre",
+                targetItem = "Chapitre #$id: $title"
+            )
+            onSuccess()
+        }
+    }
+
+    fun deleteChapterAdmin(chapterId: Long, onSuccess: () -> Unit = {}) {
+        if (!isOwnerOrAdmin()) return
+        viewModelScope.launch {
+            repository.deleteChapter(chapterId)
+            onSuccess()
+        }
+    }
+
     fun deleteLessonAdmin(lessonId: Long, onSuccess: () -> Unit = {}) {
         if (!isOwnerOrAdmin()) return
         val adminName = _currentUser.value?.let { "${it.firstName} ${it.lastName}" } ?: "Propriétaire"
@@ -692,6 +964,19 @@ class EduViewModel(application: Application) : AndroidViewModel(application) {
                 targetItem = "Utilisateur #$userId"
             )
             onSuccess()
+        }
+    }
+
+    fun toggleUserSuspension(userId: Long, shouldSuspend: Boolean) {
+        if (!isOwnerOrAdmin()) return
+        val adminName = _currentUser.value?.let { "${it.firstName} ${it.lastName}" } ?: "Propriétaire"
+        viewModelScope.launch {
+            repository.setSuspendedStatus(userId, shouldSuspend)
+            repository.logAdminAction(
+                adminName = adminName,
+                action = if (shouldSuspend) "Suspension compte" else "Réactivation compte",
+                targetItem = "Utilisateur #$userId"
+            )
         }
     }
 

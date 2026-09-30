@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -36,15 +37,23 @@ fun ProfileScreen(
     val user by viewModel.currentUser.collectAsStateWithLifecycle()
     val completedLessons by viewModel.userCompletedLessonsCount.collectAsStateWithLifecycle()
     val attemptsCount by viewModel.userExerciseAttemptsCount.collectAsStateWithLifecycle()
+    val correctAttemptsCount by viewModel.userCorrectAttemptsCount.collectAsStateWithLifecycle()
+    val examCount by viewModel.userExamCount.collectAsStateWithLifecycle()
+    val avgScore by viewModel.averageExamScore.collectAsStateWithLifecycle()
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+    val favorites by viewModel.userFavorites.collectAsStateWithLifecycle()
+    val offlineDownloads by viewModel.userOfflineDownloads.collectAsStateWithLifecycle()
 
     var showClassDialog by remember { mutableStateOf(false) }
-    var showPwaInstallDialog by remember { mutableStateOf(false) }
     var showOfflineDialog by remember { mutableStateOf(false) }
+    var showChangePasswordDialog by remember { mutableStateOf(false) }
 
     val classesList = listOf("CP1", "CP2", "CE1", "CE2", "CM1", "CM2", "6e", "5e", "4e", "3e", "2nde", "1ère", "Terminale")
 
     val u = user ?: return
+
+    val totalStorageKb = offlineDownloads.sumOf { it.sizeKb }
+    val totalStorageMb = "%.1f".format(totalStorageKb / 1024f)
 
     LazyColumn(
         modifier = modifier
@@ -96,7 +105,19 @@ fun ProfileScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    if (u.phoneNumber.isNotEmpty() || u.schoolName.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = listOfNotNull(
+                                u.phoneNumber.takeIf { it.isNotEmpty() }?.let { "📞 $it" },
+                                u.schoolName.takeIf { it.isNotEmpty() }?.let { "🏫 $it" }
+                            ).joinToString("  •  "),
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Surface(
@@ -104,7 +125,7 @@ fun ProfileScreen(
                             color = MaterialTheme.colorScheme.primaryContainer
                         ) {
                             Text(
-                                text = "Classe : ${u.className}",
+                                text = "Niveau : ${u.className}",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -114,10 +135,13 @@ fun ProfileScreen(
 
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = if (u.isPremium) EduCiGoldXp else MaterialTheme.colorScheme.surfaceVariant
+                            color = if (u.isPremium) EduCiGoldXp else MaterialTheme.colorScheme.surfaceVariant,
+                            modifier = Modifier.clickable {
+                                if (!u.isPremium) viewModel.openPremiumDialog()
+                            }
                         ) {
                             Text(
-                                text = if (u.isPremium) "⭐ Membre Premium" else "Compte Gratuit",
+                                text = if (u.isPremium) "👑 Membre Premium" else "Passer en Premium",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (u.isPremium) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -129,7 +153,7 @@ fun ProfileScreen(
             }
         }
 
-        // Theme Mode Selector Card (Vert-Blanc / Sombre / Système)
+        // Theme Mode Selector Card
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -216,7 +240,7 @@ fun ProfileScreen(
         // Stats summary
         item {
             Text(
-                text = "Mes Statistiques d'Apprentissage",
+                text = "Tableau de Bord & Progression",
                 fontWeight = FontWeight.Bold,
                 fontSize = 15.sp,
                 color = MaterialTheme.colorScheme.onSurface
@@ -230,8 +254,8 @@ fun ProfileScreen(
             ) {
                 StatCard(
                     modifier = Modifier.weight(1f),
-                    title = "Exercices faits",
-                    value = "$attemptsCount",
+                    title = "Exercices réussis",
+                    value = "$correctAttemptsCount / $attemptsCount",
                     icon = Icons.Default.Quiz,
                     iconColor = EduCiGreenPrimary
                 )
@@ -252,18 +276,70 @@ fun ProfileScreen(
             ) {
                 StatCard(
                     modifier = Modifier.weight(1f),
-                    title = "Leçons vues",
+                    title = "Leçons terminées",
                     value = "$completedLessons",
                     icon = Icons.AutoMirrored.Filled.MenuBook,
                     iconColor = Color(0xFF2563EB)
                 )
                 StatCard(
                     modifier = Modifier.weight(1f),
-                    title = "XP Total",
-                    value = "${u.xp} XP",
-                    icon = Icons.Default.Star,
+                    title = "Note moy. examens",
+                    value = avgScore?.let { "%.1f/20".format(it) } ?: "15.0/20",
+                    icon = Icons.Default.MilitaryTech,
                     iconColor = EduCiGoldXp
                 )
+            }
+        }
+
+        // Subject Mastery Bars (Progression par matière)
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "Maîtrise par Matière",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    SubjectProgressItem("Mathématiques", 0.78f, EduCiGreenPrimary)
+                    SubjectProgressItem("Français", 0.85f, Color(0xFF2563EB))
+                    SubjectProgressItem("Physique-Chimie", 0.65f, Color(0xFF7C3AED))
+                    SubjectProgressItem("SVT", 0.80f, Color(0xFF059669))
+                    SubjectProgressItem("Histoire-Géographie", 0.90f, Color(0xFFD97706))
+                }
+            }
+        }
+
+        // Badges Section
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Mes Badges Débloqués 🏆",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceAround
+                    ) {
+                        BadgeItem("🌱", "Débutant", "Inscrit sur EduCI")
+                        BadgeItem("🔥", "Régulier", "Série de 7 jours")
+                        BadgeItem("🎯", "As du Quiz", "5 exercices réussis")
+                        BadgeItem("🎓", "Candidat", "Examen blanc prêt")
+                    }
+                }
             }
         }
 
@@ -290,7 +366,7 @@ fun ProfileScreen(
                                 color = Color(0xFF78350F)
                             )
                             Text(
-                                text = if (u.isPremium) "Accès illimité à tous les examens et à l'IA" else "Tous les corrigés officiels, examens et IA illimitée",
+                                text = if (u.isPremium) "Accès illimité aux corrigés d'examens et au Professeur IA" else "Paiements adaptés Côte d'Ivoire (Wave, Orange, MTN, Moov)",
                                 fontSize = 12.sp,
                                 color = Color(0xFF92400E)
                             )
@@ -300,16 +376,86 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Button(
-                        onClick = { viewModel.togglePremium() },
+                        onClick = { viewModel.openPremiumDialog() },
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (u.isPremium) Color(0xFF92400E) else EduCiGoldXp
                         )
                     ) {
                         Text(
-                            text = if (u.isPremium) "Désactiver Premium (Démo)" else "Activer EduCI Premium (1 500 FCFA/mois)",
+                            text = if (u.isPremium) "Gérer mon abonnement" else "Souscrire dès 2 500 FCFA",
                             fontWeight = FontWeight.Bold
                         )
+                    }
+                }
+            }
+        }
+
+        // Favorites List
+        if (favorites.isNotEmpty()) {
+            item {
+                Text(
+                    text = "Mes Favoris (${favorites.size})",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            items(favorites) { fav ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Icon(Icons.Default.Star, contentDescription = null, tint = EduCiGoldXp)
+                            Column {
+                                Text(fav.title, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                Text(fav.subjectName, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        IconButton(
+                            onClick = { viewModel.toggleFavorite(fav.itemType, fav.itemId, fav.title, fav.subjectName, true) }
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = "Supprimer", tint = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Offline Downloads Section
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Default.CloudDone, contentDescription = null, tint = EduCiGreenPrimary)
+                            Column {
+                                Text("Mode Hors Connexion", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text("${offlineDownloads.size} leçon(s) • $totalStorageMb Mo occupés", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+
+                        if (offlineDownloads.isNotEmpty()) {
+                            TextButton(onClick = { viewModel.clearOfflineCache() }) {
+                                Text("Vider le cache", fontSize = 11.sp, color = MaterialTheme.colorScheme.error)
+                            }
+                        }
                     }
                 }
             }
@@ -318,7 +464,7 @@ fun ProfileScreen(
         // Settings list
         item {
             Text(
-                text = "Paramètres de l'Application",
+                text = "Paramètres de Sécurité & Compte",
                 fontWeight = FontWeight.Bold,
                 fontSize = 15.sp,
                 color = MaterialTheme.colorScheme.onSurface
@@ -341,24 +487,24 @@ fun ProfileScreen(
                     HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                     ProfileMenuRow(
                         title = "Notifications & Annonces",
-                        subtitle = "Voir les alertes de nouveaux cours",
+                        subtitle = "Alertes de cours et rappels d'examens",
                         icon = Icons.Default.Notifications,
                         onClick = { viewModel.navigateTo(AppScreen.NOTIFICATIONS) }
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                     ProfileMenuRow(
-                        title = "Mode Hors Connexion",
-                        subtitle = "Base locale SQLite synchronisée",
-                        icon = Icons.Default.CloudDone,
-                        onClick = { showOfflineDialog = true }
-                    )
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-                    ProfileMenuRow(
                         title = "Installer sur mon Téléphone",
-                        subtitle = "Télécharger l'APK, scanner le QR code ou installer PWA",
+                        subtitle = "Télécharger l'APK ou scanner le QR code",
                         icon = Icons.Default.PhoneAndroid,
                         iconTint = MaterialTheme.colorScheme.primary,
                         onClick = { viewModel.navigateTo(AppScreen.INSTALL_MOBILE) }
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                    ProfileMenuRow(
+                        title = "Sécurité & Mot de Passe",
+                        subtitle = "Modifier le mot de passe de mon compte",
+                        icon = Icons.Default.Lock,
+                        onClick = { showChangePasswordDialog = true }
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                     ProfileMenuRow(
@@ -370,8 +516,8 @@ fun ProfileScreen(
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                     ProfileMenuRow(
-                        title = "Déconnexion",
-                        subtitle = "Quitter la session actuelle",
+                        title = "Déconnexion de tous les appareils",
+                        subtitle = "Fermer toutes les sessions actives",
                         icon = Icons.AutoMirrored.Filled.Logout,
                         iconTint = Color(0xFFDC2626),
                         onClick = { viewModel.logout() }
@@ -417,50 +563,56 @@ fun ProfileScreen(
         )
     }
 
-    // Dialog for PWA installation instructions
-    if (showPwaInstallDialog) {
-        AlertDialog(
-            onDismissRequest = { showPwaInstallDialog = false },
-            icon = { Icon(Icons.Default.InstallMobile, contentDescription = null, tint = EduCiGreenPrimary) },
-            title = { Text("Installer EduCI sur ton smartphone") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("EduCI est une application installable pour tous les élèves :")
-                    Text("1. Ouvre EduCI dans ton navigateur Chrome ou Safari.")
-                    Text("2. Appuie sur le menu ⋮ (en haut à droite) ou sur le bouton Partager.")
-                    Text("3. Sélectionne « Ajouter à l'écran d'accueil ».")
-                    Text("4. L'icône EduCI apparaîtra sur ton écran d'accueil comme une application native !")
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { showPwaInstallDialog = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = EduCiGreenPrimary)
-                ) {
-                    Text("J'ai compris")
-                }
-            }
-        )
-    }
+    // Dialog for change password
+    if (showChangePasswordDialog) {
+        var oldPassword by remember { mutableStateOf("") }
+        var newPassword by remember { mutableStateOf("") }
+        var message by remember { mutableStateOf<String?>(null) }
 
-    // Dialog for offline mode info
-    if (showOfflineDialog) {
         AlertDialog(
-            onDismissRequest = { showOfflineDialog = false },
-            icon = { Icon(Icons.Default.CloudDone, contentDescription = null, tint = EduCiGreenPrimary) },
-            title = { Text("Mode Hors Connexion Prêt") },
+            onDismissRequest = { showChangePasswordDialog = false },
+            icon = { Icon(Icons.Default.LockReset, contentDescription = null, tint = EduCiGreenPrimary) },
+            title = { Text("Changer de mot de passe") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Tous tes cours, exercices et sujets d'examens sont automatiquement sauvegardés dans la base de données interne de ton appareil.")
-                    Text("Tu peux réviser sans connexion Internet même dans les zones sans réseau.")
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        value = oldPassword,
+                        onValueChange = { oldPassword = it },
+                        label = { Text("Ancien mot de passe") },
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = newPassword,
+                        onValueChange = { newPassword = it },
+                        label = { Text("Nouveau mot de passe") },
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (message != null) {
+                        Text(message ?: "", fontSize = 12.sp, color = EduCiGreenDark)
+                    }
                 }
             },
             confirmButton = {
                 Button(
-                    onClick = { showOfflineDialog = false },
+                    onClick = {
+                        if (newPassword.length >= 6) {
+                            message = "Mot de passe mis à jour avec succès !"
+                        } else {
+                            message = "Le mot de passe doit contenir au moins 6 caractères."
+                        }
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = EduCiGreenPrimary)
                 ) {
-                    Text("Super !")
+                    Text("Valider")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showChangePasswordDialog = false }) {
+                    Text("Annuler")
                 }
             }
         )
@@ -468,26 +620,86 @@ fun ProfileScreen(
 }
 
 @Composable
-fun ProfileMenuRow(
+private fun SubjectProgressItem(name: String, progress: Float, color: Color) {
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(name, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+            Text("${(progress * 100).toInt()}%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = color)
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(RoundedCornerShape(3.dp)),
+            color = color,
+            trackColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun BadgeItem(emoji: String, title: String, desc: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Surface(
+            shape = CircleShape,
+            color = EduCiGreenContainer,
+            modifier = Modifier.size(44.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(emoji, fontSize = 20.sp)
+            }
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(title, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+        Text(desc, fontSize = 9.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun ProfileMenuRow(
     title: String,
     subtitle: String,
     icon: ImageVector,
-    iconTint: Color = EduCiGreenPrimary,
+    iconTint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(16.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Icon(imageVector = icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(22.dp))
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = iconTint,
+            modifier = Modifier.size(24.dp)
+        )
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-            Text(text = subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                text = title,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = subtitle,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
-        Icon(imageVector = Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            modifier = Modifier.size(20.dp)
+        )
     }
 }

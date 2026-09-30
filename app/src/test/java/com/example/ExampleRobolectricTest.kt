@@ -70,4 +70,21 @@ class ExampleRobolectricTest {
         assertTrue(blocks.any { it is ContentBlock.BulletItem })
         assertTrue(blocks.any { it is ContentBlock.NumberedItem })
     }
+
+    @Test
+    fun `test rich content block parser with images, geometric figures and quotes`() {
+        val raw = """
+            > Ceci est une citation inspirante
+            :::figure:triangle
+            Triangle rectangle ABC
+            Angle droit en A avec hypoténuse BC = 5 cm
+            :::
+            ![Illustration d'un cours](https://example.com/figure.png|center|large)
+        """.trimIndent()
+
+        val blocks = parseContentBlocks(raw)
+        assertTrue(blocks.any { it is ContentBlock.Blockquote })
+        assertTrue(blocks.any { it is ContentBlock.GeometricFigure })
+        assertTrue(blocks.any { it is ContentBlock.ImageBlock })
+    }
 }

@@ -3,6 +3,7 @@ package com.example.data.repository
 import android.content.Context
 import com.example.data.local.*
 import kotlinx.coroutines.flow.Flow
+import java.security.MessageDigest
 
 class EduRepository(context: Context) {
     private val db = AppDatabase.getInstance(context)
@@ -13,16 +14,29 @@ class EduRepository(context: Context) {
     val notificationDao = db.notificationDao()
     val adminLogDao = db.adminLogDao()
     val draftDao = db.draftBackupDao()
+    val favoriteDao = db.favoriteDao()
+    val offlineDao = db.offlineDownloadDao()
+    val paymentDao = db.paymentDao()
+    val examSubmissionDao = db.examSubmissionDao()
 
     // Database accessor for seeding
     fun getDatabase(): AppDatabase = db
 
+    companion object {
+        fun hashPassword(password: String): String {
+            val bytes = MessageDigest.getInstance("SHA-256").digest(password.toByteArray())
+            return bytes.joinToString("") { "%02x".format(it) }
+        }
+    }
+
     // Users
     fun getUserById(userId: Long): Flow<UserEntity?> = userDao.getUserById(userId)
     suspend fun getUserByEmail(email: String): UserEntity? = userDao.getUserByEmail(email)
+    suspend fun getUserByEmailOrPhone(identifier: String): UserEntity? = userDao.getUserByEmailOrPhone(identifier)
     suspend fun registerUser(user: UserEntity): Long = userDao.insertUser(user)
     suspend fun updateUser(user: UserEntity) = userDao.updateUser(user)
     suspend fun updatePremium(userId: Long, isPremium: Boolean) = userDao.updatePremiumStatus(userId, isPremium)
+    suspend fun setSuspendedStatus(userId: Long, isSuspended: Boolean) = userDao.setSuspendedStatus(userId, isSuspended)
     suspend fun addXpAndStudyTime(userId: Long, xp: Int, minutes: Int) = userDao.addXpAndStudyTime(userId, xp, minutes)
     suspend fun incrementStreak(userId: Long) = userDao.incrementStreak(userId)
     fun getAllUsers(): Flow<List<UserEntity>> = userDao.getAllUsers()
@@ -36,6 +50,7 @@ class EduRepository(context: Context) {
     fun getSubjectsForClass(classId: String): Flow<List<SubjectEntity>> = courseDao.getSubjectsForClass(classId)
     fun getAllSubjects(): Flow<List<SubjectEntity>> = courseDao.getAllSubjects()
     fun getChapters(subjectId: Long, classId: String): Flow<List<ChapterEntity>> = courseDao.getChapters(subjectId, classId)
+    fun getAllChapters(): Flow<List<ChapterEntity>> = courseDao.getAllChapters()
     fun getLessonsForChapter(chapterId: Long): Flow<List<LessonEntity>> = courseDao.getLessonsForChapter(chapterId)
     fun getAllPublishedLessons(): Flow<List<LessonEntity>> = courseDao.getAllPublishedLessons()
     fun getAllLessons(): Flow<List<LessonEntity>> = courseDao.getAllLessons()
@@ -48,7 +63,9 @@ class EduRepository(context: Context) {
 
     // Admin Course Management
     suspend fun insertSubject(subject: SubjectEntity): Long = courseDao.insertSubject(subject)
+    suspend fun deleteSubject(subjectId: Long) = courseDao.deleteSubject(subjectId)
     suspend fun insertChapter(chapter: ChapterEntity): Long = courseDao.insertChapter(chapter)
+    suspend fun deleteChapter(chapterId: Long) = courseDao.deleteChapter(chapterId)
 
     // Progress
     fun getUserProgress(userId: Long): Flow<List<UserProgressEntity>> = courseDao.getUserProgress(userId)
@@ -95,6 +112,42 @@ class EduRepository(context: Context) {
     suspend fun deleteExam(examId: Long) = examDao.deleteExam(examId)
     fun countExams(): Flow<Int> = examDao.countExams()
     fun searchExams(query: String): Flow<List<ExamEntity>> = examDao.searchExams(query)
+
+    // Exam Submissions
+    fun getExamSubmissions(userId: Long): Flow<List<ExamSubmissionEntity>> = examSubmissionDao.getSubmissionsByUser(userId)
+    fun countUserExamSubmissions(userId: Long): Flow<Int> = examSubmissionDao.countUserSubmissions(userId)
+    fun getAverageExamScore(userId: Long): Flow<Float?> = examSubmissionDao.getAverageExamScore(userId)
+    suspend fun recordExamSubmission(submission: ExamSubmissionEntity): Long {
+        val id = examSubmissionDao.insertSubmission(submission)
+        userDao.addXpAndStudyTime(submission.userId, points = (submission.score * 5).toInt(), minutes = submission.timeSpentSeconds / 60)
+        return id
+    }
+
+    // Favorites
+    fun getFavorites(userId: Long): Flow<List<FavoriteEntity>> = favoriteDao.getFavoritesByUser(userId)
+    fun isFavorite(userId: Long, itemType: String, itemId: Long): Flow<Boolean> = favoriteDao.isFavorite(userId, itemType, itemId)
+    suspend fun addFavorite(userId: Long, itemType: String, itemId: Long, title: String, subjectName: String) =
+        favoriteDao.addFavorite(FavoriteEntity(userId = userId, itemType = itemType, itemId = itemId, title = title, subjectName = subjectName))
+    suspend fun removeFavorite(userId: Long, itemType: String, itemId: Long) = favoriteDao.removeFavorite(userId, itemType, itemId)
+
+    // Offline Downloads
+    fun getOfflineDownloads(userId: Long): Flow<List<OfflineDownloadEntity>> = offlineDao.getDownloadsByUser(userId)
+    fun isDownloaded(userId: Long, itemType: String, itemId: Long): Flow<Boolean> = offlineDao.isDownloaded(userId, itemType, itemId)
+    suspend fun addOfflineDownload(userId: Long, itemType: String, itemId: Long, title: String, subjectName: String, summary: String = "", content: String = "") =
+        offlineDao.addDownload(OfflineDownloadEntity(userId = userId, itemType = itemType, itemId = itemId, title = title, subjectName = subjectName, summary = summary, content = content))
+    suspend fun removeOfflineDownload(userId: Long, itemType: String, itemId: Long) = offlineDao.removeDownload(userId, itemType, itemId)
+    suspend fun clearOfflineDownloads(userId: Long) = offlineDao.clearAllDownloads(userId)
+
+    // Payments
+    fun getUserTransactions(userId: Long): Flow<List<PaymentTransactionEntity>> = paymentDao.getTransactionsByUser(userId)
+    fun getAllTransactions(): Flow<List<PaymentTransactionEntity>> = paymentDao.getAllTransactions()
+    suspend fun recordPayment(transaction: PaymentTransactionEntity): Long {
+        val id = paymentDao.insertTransaction(transaction)
+        if (transaction.status == "VALIDEE") {
+            userDao.updatePremiumStatus(transaction.userId, true)
+        }
+        return id
+    }
 
     // Notifications
     fun getAllNotifications(): Flow<List<NotificationEntity>> = notificationDao.getAllNotifications()

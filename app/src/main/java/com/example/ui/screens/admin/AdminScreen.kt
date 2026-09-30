@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.local.DraftBackupEntity
 import com.example.ui.components.RichContentRenderer
+import com.example.ui.components.RichPedagogicalEditor
 import com.example.ui.navigation.AppScreen
 import com.example.ui.screens.home.StatCard
 import com.example.ui.theme.*
@@ -183,7 +185,7 @@ fun AdminDashboardView(
                     modifier = Modifier.weight(1f),
                     title = "Leçons publiées",
                     value = "$totalLessons",
-                    icon = Icons.Default.MenuBook,
+                    icon = Icons.AutoMirrored.Filled.MenuBook,
                     iconColor = Color(0xFF2563EB)
                 )
             }
@@ -202,7 +204,7 @@ fun AdminDashboardView(
                     modifier = Modifier.weight(1f),
                     title = "Sujets d'examens",
                     value = "$totalExams",
-                    icon = Icons.Default.Assignment,
+                    icon = Icons.AutoMirrored.Filled.Assignment,
                     iconColor = EduCiGoldXp
                 )
             }
@@ -503,56 +505,19 @@ fun AdminRichLessonEditor(viewModel: EduViewModel) {
                 )
             }
 
-            // SMART RICH EDITOR TOOLBAR
+            // PROFESSIONAL PEDAGOGICAL RICH CONTENT EDITOR
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
-                ) {
-                    Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Barre d'outils de l'éditeur riche :", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-
-                        // Row 1: Headings & Formatting
-                        val scroll1 = rememberScrollState()
-                        Row(modifier = Modifier.horizontalScroll(scroll1), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            EditorToolBtn("H1") { content += "\n# Titre Principal\n" }
-                            EditorToolBtn("H2") { content += "\n## Sous-titre\n" }
-                            EditorToolBtn("H3") { content += "\n### Section\n" }
-                            EditorToolBtn("Gras") { content += " **texte en gras** " }
-                            EditorToolBtn("Italique") { content += " *texte italique* " }
-                            EditorToolBtn("Souligné") { content += " __texte souligné__ " }
-                            EditorToolBtn("Puces") { content += "\n- Point 1\n- Point 2\n" }
-                            EditorToolBtn("Numéros") { content += "\n1. Étape 1\n2. Étape 2\n" }
-                        }
-
-                        // Row 2: Special Callout Blocks & Tables & Math
-                        val scroll2 = rememberScrollState()
-                        Row(modifier = Modifier.horizontalScroll(scroll2), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            EditorToolBtn("📐 Formule") { content += "\n" + "${'$'}${'$'}x^2 + 2x + 1 = 0${'$'}${'$'}" + "\n" }
-                            EditorToolBtn("📊 Tableau") {
-                                content += "\n| Colonne 1 | Colonne 2 | Colonne 3 |\n| --- | --- | --- |\n| Donnée A | Donnée B | Donnée C |\n"
-                            }
-                            EditorToolBtn("📖 Définition") { content += "\n:::definition\nUne propriété fondamentale...\n:::\n" }
-                            EditorToolBtn("💡 Exemple") { content += "\n:::exemple\nConsidérons le cas où x = 3...\n:::\n" }
-                            EditorToolBtn("⚠️ Attention") { content += "\n:::attention\nNe confondez pas (a+b)² et a²+b² !\n:::\n" }
-                            EditorToolBtn("✨ Conseil") { content += "\n:::conseil\nPensez à simplifier la fraction avant de calculer.\n:::\n" }
-                            EditorToolBtn("Ligne") { content += "\n---\n" }
-                        }
-                    }
-                }
-            }
-
-            // Big Rich Text Area
-            item {
-                OutlinedTextField(
-                    value = content,
-                    onValueChange = { content = it },
-                    label = { Text("Contenu riche du cours *") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp),
-                    minLines = 8,
-                    maxLines = 25
+                Text(
+                    text = "Éditeur Pédagogique Professionnel (Norme MENA Côte d'Ivoire)",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
+                )
+                RichPedagogicalEditor(
+                    content = content,
+                    onContentChange = { content = it },
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
@@ -1010,6 +975,18 @@ fun AdminCreateExamView(viewModel: EduViewModel) {
 
 @Composable
 fun AdminUsersListView(users: List<com.example.data.local.UserEntity>, viewModel: EduViewModel) {
+    var searchQuery by remember { mutableStateOf("") }
+    val filteredUsers = remember(users, searchQuery) {
+        if (searchQuery.isBlank()) users
+        else users.filter {
+            it.firstName.contains(searchQuery, ignoreCase = true) ||
+            it.lastName.contains(searchQuery, ignoreCase = true) ||
+            it.email.contains(searchQuery, ignoreCase = true) ||
+            it.phoneNumber.contains(searchQuery, ignoreCase = true) ||
+            it.className.contains(searchQuery, ignoreCase = true)
+        }
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -1017,47 +994,130 @@ fun AdminUsersListView(users: List<com.example.data.local.UserEntity>, viewModel
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         item {
-            Text("Utilisateurs enregistrés (${users.size})", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Utilisateurs (${users.size})", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = EduCiGreenContainer
+                ) {
+                    Text(
+                        text = "${users.count { it.isPremium }} Premium",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = EduCiGreenDark,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+            }
         }
 
-        items(users) { u ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("${u.firstName} ${u.lastName}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        Text(u.email, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Surface(shape = RoundedCornerShape(6.dp), color = EduCiGreenContainer) {
-                                Text("Classe : ${u.className}", fontSize = 10.sp, color = EduCiGreenDark, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
-                            }
-                            Surface(shape = RoundedCornerShape(6.dp), color = if (u.isPremium) EduCiGoldLight else Color(0xFFE2E8F0)) {
-                                Text(if (u.isPremium) "⭐ Premium" else "Gratuit", fontSize = 10.sp, color = if (u.isPremium) EduCiGoldXp else Color.DarkGray, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
-                            }
-                            Surface(shape = RoundedCornerShape(6.dp), color = if (u.role == "admin" || u.role == "owner") EduCiOrangeLight else Color(0xFFF1F5F9)) {
-                                Text(u.role.uppercase(), fontSize = 10.sp, color = if (u.role == "admin" || u.role == "owner") EduCiOrangeDark else Color.DarkGray, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
-                            }
+        // Search Bar for Users
+        item {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                label = { Text("Rechercher un élève (nom, email, tél, classe)...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Icon(Icons.Default.Clear, contentDescription = "Effacer")
                         }
                     }
+                },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            )
+        }
 
-                    // Delete action (allowed only for owner, and cannot delete owner account)
-                    if (u.role != "owner" && !u.email.equals(com.example.ui.viewmodel.OWNER_EMAIL, ignoreCase = true)) {
-                        IconButton(
-                            onClick = { viewModel.deleteUserAdmin(u.id) }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Supprimer l'utilisateur",
-                                tint = Color(0xFFDC2626)
-                            )
+        if (filteredUsers.isEmpty()) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                        Text("Aucun utilisateur correspondant trouvé.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        } else {
+            items(filteredUsers) { u ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (u.isSuspended) Color(0xFFFEF2F2) else MaterialTheme.colorScheme.surface
+                    ),
+                    border = if (u.isSuspended) androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.5f)) else null
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text("${u.firstName} ${u.lastName}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                if (u.isSuspended) {
+                                    Surface(shape = RoundedCornerShape(4.dp), color = Color(0xFFEF4444)) {
+                                        Text("SUSPENDU", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp))
+                                    }
+                                }
+                            }
+                            Text(u.email, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            if (u.phoneNumber.isNotEmpty() || u.schoolName.isNotEmpty()) {
+                                Text(
+                                    text = listOfNotNull(
+                                        u.phoneNumber.takeIf { it.isNotEmpty() }?.let { "📞 $it" },
+                                        u.schoolName.takeIf { it.isNotEmpty() }?.let { "🏫 $it" }
+                                    ).joinToString(" • "),
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Surface(shape = RoundedCornerShape(6.dp), color = EduCiGreenContainer) {
+                                    Text("Classe : ${u.className}", fontSize = 10.sp, color = EduCiGreenDark, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                }
+                                Surface(shape = RoundedCornerShape(6.dp), color = if (u.isPremium) EduCiGoldLight else Color(0xFFE2E8F0)) {
+                                    Text(if (u.isPremium) "⭐ Premium" else "Gratuit", fontSize = 10.sp, color = if (u.isPremium) EduCiGoldXp else Color.DarkGray, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                }
+                                Surface(shape = RoundedCornerShape(6.dp), color = if (u.role == "admin" || u.role == "owner") EduCiOrangeLight else Color(0xFFF1F5F9)) {
+                                    Text(u.role.uppercase(), fontSize = 10.sp, color = if (u.role == "admin" || u.role == "owner") EduCiOrangeDark else Color.DarkGray, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                }
+                            }
+                        }
+
+                        // Suspend / Reactivate Action & Delete action (owner only, cannot delete owner)
+                        if (u.role != "owner" && !u.email.equals(com.example.ui.viewmodel.OWNER_EMAIL, ignoreCase = true)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(
+                                    onClick = { viewModel.toggleUserSuspension(u.id, !u.isSuspended) }
+                                ) {
+                                    Icon(
+                                        imageVector = if (u.isSuspended) Icons.Default.CheckCircle else Icons.Default.Block,
+                                        contentDescription = if (u.isSuspended) "Réactiver le compte" else "Suspendre le compte",
+                                        tint = if (u.isSuspended) EduCiGreenPrimary else EduCiOrangeAccent
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { viewModel.deleteUserAdmin(u.id) }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Supprimer l'utilisateur",
+                                        tint = Color(0xFFDC2626)
+                                    )
+                                }
+                            }
                         }
                     }
                 }

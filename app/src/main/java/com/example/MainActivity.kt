@@ -66,6 +66,15 @@ fun EduCiApp(
     val isPremium = currentUser?.isPremium ?: false
     val isAdmin = currentUser?.role in listOf("owner", "admin") || currentUser?.email.equals(com.example.ui.viewmodel.OWNER_EMAIL, ignoreCase = true)
 
+    val showPremiumDialog by viewModel.showPremiumDialog.collectAsStateWithLifecycle()
+
+    if (showPremiumDialog) {
+        com.example.ui.components.PremiumPaymentDialog(
+            viewModel = viewModel,
+            onDismiss = { viewModel.closePremiumDialog() }
+        )
+    }
+
     // BackHandler for secondary screens
     BackHandler(enabled = currentScreen != AppScreen.HOME && currentScreen != AppScreen.AUTH) {
         val handled = viewModel.navigateBack()

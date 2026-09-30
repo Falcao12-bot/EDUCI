@@ -12,10 +12,39 @@ object DataSeeder {
         val examDao = db.examDao()
         val notificationDao = db.notificationDao()
 
-        // Clean up any old default demo users from previous versions
-        try {
-            db.openHelper.writableDatabase.execSQL("DELETE FROM users WHERE email IN ('admin@educi.ci', 'koffi.jean@educi.ci')")
-        } catch (_: Exception) {}
+        // 1. Seed Demo users if empty
+        val existingAdmin = userDao.getUserByEmail("admin@educi.ci")
+        if (existingAdmin == null) {
+            userDao.insertUser(
+                UserEntity(
+                    firstName = "Admin",
+                    lastName = "EduCI",
+                    email = "admin@educi.ci",
+                    phoneNumber = "+2250700000000",
+                    passwordHash = com.example.data.repository.EduRepository.hashPassword("admin123"),
+                    className = "terminale",
+                    schoolName = "Ministère de l'Éducation Nationale",
+                    role = "admin",
+                    isPremium = true
+                )
+            )
+        }
+        val existingStudent = userDao.getUserByEmail("koffi.jean@educi.ci")
+        if (existingStudent == null) {
+            userDao.insertUser(
+                UserEntity(
+                    firstName = "Koffi",
+                    lastName = "Jean",
+                    email = "koffi.jean@educi.ci",
+                    phoneNumber = "+2250501020304",
+                    passwordHash = com.example.data.repository.EduRepository.hashPassword("eleve123"),
+                    className = "4e",
+                    schoolName = "Lycée Classique d'Abidjan",
+                    role = "student",
+                    isPremium = false
+                )
+            )
+        }
 
         // 2. Seed Levels
         val levels = listOf(
