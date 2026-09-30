@@ -17,6 +17,8 @@ import { ProfileScreen } from './src/screens/ProfileScreen';
 import { AdminScreen } from './src/screens/AdminScreen';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { InstallMobileScreen } from './src/screens/InstallMobileScreen';
+import { SearchScreen } from './src/screens/SearchScreen';
+import { NotificationsScreen } from './src/screens/NotificationsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -107,6 +109,8 @@ function NavigationRoot() {
         <Stack.Screen name="Admin" component={AdminScreen} />
         <Stack.Screen name="Auth" component={AuthScreen} />
         <Stack.Screen name="InstallMobile" component={InstallMobileScreen} />
+        <Stack.Screen name="Search" component={SearchScreen} />
+        <Stack.Screen name="Notifications" component={NotificationsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

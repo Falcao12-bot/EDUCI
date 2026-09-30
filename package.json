@@ -1,0 +1,22 @@
+{
+  "name": "educi-mobile",
+  "version": "1.0.0",
+  "description": "EduCI - Plateforme éducative ivoirienne en React Native & Expo",
+  "main": "react-native-educi/App.tsx",
+  "scripts": {
+    "start": "cd react-native-educi && npm start",
+    "android": "cd react-native-educi && npm run android",
+    "ios": "cd react-native-educi && npm run ios",
+    "web": "cd react-native-educi && npm run web"
+  },
+  "keywords": [
+    "education",
+    "cote-divoire",
+    "react-native",
+    "expo",
+    "bepc",
+    "bac"
+  ],
+  "author": "EduCI Team",
+  "license": "MIT"
+}

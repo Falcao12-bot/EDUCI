@@ -46,6 +46,30 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         <View style={styles.headerActions}>
           <TouchableOpacity
             style={[styles.themeBtn, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
+            onPress={() => navigation.navigate('Search')}
+            accessibilityLabel="Rechercher"
+          >
+            <Text style={styles.themeBtnText}>🔍</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.themeBtn, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
+            onPress={() => navigation.navigate('Notifications')}
+            accessibilityLabel="Notifications"
+          >
+            <Text style={styles.themeBtnText}>🔔</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.themeBtn, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
+            onPress={() => navigation.navigate('InstallMobile')}
+            accessibilityLabel="Installer l'application"
+          >
+            <Text style={styles.themeBtnText}>📱</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.themeBtn, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
             onPress={toggleTheme}
             accessibilityLabel="Changer de thème"
           >
