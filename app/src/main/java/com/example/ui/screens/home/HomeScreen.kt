@@ -10,6 +10,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -416,7 +418,7 @@ fun HomeScreen(
                 QuickActionButton(
                     title = "Mes Cours",
                     subtitle = "Programme ivoirien",
-                    icon = Icons.Default.MenuBook,
+                    icon = Icons.AutoMirrored.Filled.MenuBook,
                     bgColor = EduCiGreenContainer,
                     iconColor = EduCiGreenPrimary,
                     modifier = Modifier.weight(1f)
@@ -444,7 +446,7 @@ fun HomeScreen(
                 QuickActionButton(
                     title = "Examens DECO",
                     subtitle = "CEPE, BEPC, BAC",
-                    icon = Icons.Default.Assignment,
+                    icon = Icons.AutoMirrored.Filled.Assignment,
                     bgColor = Color(0xFFEFF6FF),
                     iconColor = Color(0xFF2563EB),
                     modifier = Modifier.weight(1f)

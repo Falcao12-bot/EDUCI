@@ -166,7 +166,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         <View style={styles.grid}>
           <TouchableOpacity
             style={[styles.hubCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-            onPress={() => navigation.navigate('Courses')}
+            onPress={() => navigation.navigate('CoursesTab')}
           >
             <Text style={styles.hubIcon}>📚</Text>
             <Text style={[styles.hubTitle, { color: colors.textPrimary }]}>Cours & Leçons</Text>
@@ -175,7 +175,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
           <TouchableOpacity
             style={[styles.hubCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-            onPress={() => navigation.navigate('Exercises')}
+            onPress={() => navigation.navigate('ExercisesTab')}
           >
             <Text style={styles.hubIcon}>✍️</Text>
             <Text style={[styles.hubTitle, { color: colors.textPrimary }]}>Exercices</Text>
@@ -184,7 +184,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
           <TouchableOpacity
             style={[styles.hubCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-            onPress={() => navigation.navigate('Exams')}
+            onPress={() => navigation.navigate('ExamsTab')}
           >
             <Text style={styles.hubIcon}>🎓</Text>
             <Text style={[styles.hubTitle, { color: colors.textPrimary }]}>Examens CI</Text>
@@ -193,7 +193,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
           <TouchableOpacity
             style={[styles.hubCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-            onPress={() => navigation.navigate('AiTeacher')}
+            onPress={() => navigation.navigate('AiTab')}
           >
             <Text style={styles.hubIcon}>🤖</Text>
             <Text style={[styles.hubTitle, { color: colors.textPrimary }]}>Tuteur IA</Text>
@@ -207,7 +207,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           <TouchableOpacity
             key={lesson.id}
             style={[styles.lessonCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-            onPress={() => navigation.navigate('Courses', { lessonId: lesson.id })}
+            onPress={() => navigation.navigate('CoursesTab')}
           >
             <View style={styles.lessonMetaRow}>
               <View style={[styles.subjectTag, { backgroundColor: colors.badgeBg }]}>

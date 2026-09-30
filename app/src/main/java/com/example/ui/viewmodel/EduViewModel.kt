@@ -299,19 +299,26 @@ class EduViewModel(application: Application) : AndroidViewModel(application) {
                     navigateTo(AppScreen.ADMIN)
                     onResult(true, "Accès Propriétaire déverrouillé avec succès !")
                 } else {
-                    val ownerUser = UserEntity(
-                        email = OWNER_EMAIL,
-                        passwordHash = "admin",
-                        firstName = "Propriétaire",
-                        lastName = "EduCI",
-                        className = "Direction",
-                        role = "owner",
-                        isPremium = true,
-                        xp = 2500,
-                        streak = 30
-                    )
-                    val id = repository.registerUser(ownerUser)
-                    _currentUser.value = ownerUser.copy(id = id)
+                    val existing = repository.getUserByEmail(OWNER_EMAIL)
+                    if (existing != null) {
+                        val updated = existing.copy(role = "owner", isPremium = true)
+                        repository.updateUser(updated)
+                        _currentUser.value = updated
+                    } else {
+                        val ownerUser = UserEntity(
+                            email = OWNER_EMAIL,
+                            passwordHash = "admin",
+                            firstName = "Propriétaire",
+                            lastName = "EduCI",
+                            className = "Direction",
+                            role = "owner",
+                            isPremium = true,
+                            xp = 2500,
+                            streak = 30
+                        )
+                        val id = repository.registerUser(ownerUser)
+                        _currentUser.value = ownerUser.copy(id = id)
+                    }
                     navigateTo(AppScreen.ADMIN)
                     onResult(true, "Session Propriétaire EduCI ouverte avec succès !")
                 }
@@ -354,8 +361,14 @@ class EduViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun selectSubject(subject: SubjectEntity) {
+    fun selectSubject(subject: SubjectEntity?) {
         _selectedSubject.value = subject
+        _selectedChapter.value = null
+        _currentLesson.value = null
+    }
+
+    fun clearSelectedSubject() {
+        _selectedSubject.value = null
         _selectedChapter.value = null
         _currentLesson.value = null
     }

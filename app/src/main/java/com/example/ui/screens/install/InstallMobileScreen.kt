@@ -358,7 +358,7 @@ fun InstallMobileScreen(
                                 }
                             }
 
-                            Divider(color = MaterialTheme.colorScheme.outlineVariant)
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
                             // Step-by-Step Instructions
                             InstallationStep(
@@ -446,7 +446,7 @@ fun InstallMobileScreen(
                                 }
                             }
 
-                            Divider(color = MaterialTheme.colorScheme.outlineVariant)
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
                             InstallationStep(
                                 number = "1",

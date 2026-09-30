@@ -137,7 +137,7 @@ fun CoursesScreen(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 if (selectedSubject != null) {
-                    TextButton(onClick = { viewModel.selectSubject(SubjectEntity(name = "", classId = "")) }) {
+                    TextButton(onClick = { viewModel.clearSelectedSubject() }) {
                         Text("Toutes les matières", fontSize = 12.sp)
                     }
                 }

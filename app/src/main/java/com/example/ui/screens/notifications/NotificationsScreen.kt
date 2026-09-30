@@ -6,6 +6,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -42,7 +45,7 @@ fun NotificationsScreen(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { viewModel.navigateBack() }) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Retour")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
                 }
                 Text("Notifications", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
             }
@@ -77,8 +80,8 @@ fun NotificationsScreen(
                         ) {
                             Icon(
                                 imageVector = when (notif.type) {
-                                    "new_lesson" -> Icons.Default.MenuBook
-                                    "exam_ready" -> Icons.Default.Assignment
+                                    "new_lesson" -> Icons.AutoMirrored.Filled.MenuBook
+                                    "exam_ready" -> Icons.AutoMirrored.Filled.Assignment
                                     "reminder" -> Icons.Default.LocalFireDepartment
                                     else -> Icons.Default.Campaign
                                 },
