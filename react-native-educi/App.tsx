@@ -16,6 +16,7 @@ import { AiTeacherScreen } from './src/screens/AiTeacherScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { AdminScreen } from './src/screens/AdminScreen';
 import { AuthScreen } from './src/screens/AuthScreen';
+import { InstallMobileScreen } from './src/screens/InstallMobileScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -105,6 +106,7 @@ function NavigationRoot() {
         <Stack.Screen name="MainTabs" component={MainTabNavigator} />
         <Stack.Screen name="Admin" component={AdminScreen} />
         <Stack.Screen name="Auth" component={AuthScreen} />
+        <Stack.Screen name="InstallMobile" component={InstallMobileScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

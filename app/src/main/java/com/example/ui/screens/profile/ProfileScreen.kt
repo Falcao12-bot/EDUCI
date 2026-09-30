@@ -354,10 +354,11 @@ fun ProfileScreen(
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                     ProfileMenuRow(
-                        title = "Installer l'application",
-                        subtitle = "Guide d'installation PWA / Mobile",
-                        icon = Icons.Default.Download,
-                        onClick = { showPwaInstallDialog = true }
+                        title = "Installer sur mon Téléphone",
+                        subtitle = "Télécharger l'APK, scanner le QR code ou installer PWA",
+                        icon = Icons.Default.PhoneAndroid,
+                        iconTint = MaterialTheme.colorScheme.primary,
+                        onClick = { viewModel.navigateTo(AppScreen.INSTALL_MOBILE) }
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                     ProfileMenuRow(

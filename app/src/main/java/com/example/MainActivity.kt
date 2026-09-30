@@ -95,14 +95,21 @@ fun EduCiApp(
                             viewModel.navigateTo(AppScreen.ADMIN)
                         }
                     },
-                    onBackClick = if (currentScreen in listOf(AppScreen.LESSON_DETAIL, AppScreen.NOTIFICATIONS, AppScreen.SEARCH)) {
+                    onInstallMobileClick = {
+                        if (currentScreen == AppScreen.INSTALL_MOBILE) {
+                            viewModel.navigateTo(AppScreen.HOME)
+                        } else {
+                            viewModel.navigateTo(AppScreen.INSTALL_MOBILE)
+                        }
+                    },
+                    onBackClick = if (currentScreen in listOf(AppScreen.LESSON_DETAIL, AppScreen.NOTIFICATIONS, AppScreen.SEARCH, AppScreen.INSTALL_MOBILE)) {
                         { viewModel.navigateBack() }
                     } else null
                 )
             }
         },
         bottomBar = {
-            if (currentScreen != AppScreen.AUTH && currentScreen != AppScreen.ADMIN && currentScreen != AppScreen.SEARCH) {
+            if (currentScreen != AppScreen.AUTH && currentScreen != AppScreen.ADMIN && currentScreen != AppScreen.SEARCH && currentScreen != AppScreen.INSTALL_MOBILE) {
                 EduBottomBar(
                     currentScreen = currentScreen,
                     onTabSelected = { screen -> viewModel.navigateTo(screen) }
@@ -124,6 +131,7 @@ fun EduCiApp(
             AppScreen.ADMIN -> AdminScreen(viewModel = viewModel, modifier = modifier)
             AppScreen.NOTIFICATIONS -> NotificationsScreen(viewModel = viewModel, modifier = modifier)
             AppScreen.SEARCH -> SearchScreen(viewModel = viewModel, modifier = modifier)
+            AppScreen.INSTALL_MOBILE -> com.example.ui.screens.install.InstallMobileScreen(viewModel = viewModel, modifier = modifier)
         }
     }
 }

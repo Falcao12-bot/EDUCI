@@ -11,5 +11,6 @@ enum class AppScreen {
     PROFILE,
     ADMIN,
     NOTIFICATIONS,
-    SEARCH
+    SEARCH,
+    INSTALL_MOBILE
 }

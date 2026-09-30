@@ -139,6 +139,28 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           })}
         </ScrollView>
 
+        {/* Install on Mobile Banner */}
+        <TouchableOpacity
+          style={[styles.installBanner, { backgroundColor: colors.surfaceVariant, borderColor: colors.primary }]}
+          onPress={() => navigation.navigate('InstallMobile')}
+        >
+          <Text style={styles.installBannerIcon}>📲</Text>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={[styles.installBannerTitle, { color: colors.textPrimary }]}>
+                Installer sur Téléphone
+              </Text>
+              <View style={[styles.installBadge, { backgroundColor: colors.accent }]}>
+                <Text style={styles.installBadgeText}>INSTALLER</Text>
+              </View>
+            </View>
+            <Text style={[styles.installBannerSub, { color: colors.textSecondary }]}>
+              QR Code, Fichier APK Android ou Raccourci écran d'accueil
+            </Text>
+          </View>
+          <Text style={{ fontSize: 16, color: colors.primary, fontWeight: 'bold' }}>➔</Text>
+        </TouchableOpacity>
+
         {/* Quick Hub Navigation Cards */}
         <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Espaces d'Apprentissage</Text>
         <View style={styles.grid}>
@@ -228,6 +250,20 @@ const styles = StyleSheet.create({
   ownerBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1, marginLeft: 8 },
   ownerBadgeText: { fontSize: 11, fontWeight: '700' },
   sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 10, marginTop: 6 },
+  installBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 16,
+    gap: 12,
+  },
+  installBannerIcon: { fontSize: 28 },
+  installBannerTitle: { fontSize: 14, fontWeight: '700' },
+  installBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  installBadgeText: { color: '#FFFFFF', fontSize: 9, fontWeight: '800' },
+  installBannerSub: { fontSize: 11, marginTop: 2 },
   levelRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   levelTab: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1, alignItems: 'center' },
   levelTabText: { fontSize: 14 },

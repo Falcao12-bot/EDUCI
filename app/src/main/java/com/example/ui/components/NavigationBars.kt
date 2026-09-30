@@ -38,6 +38,7 @@ fun EduTopBar(
     onSearchClick: () -> Unit,
     onNotificationsClick: () -> Unit,
     onAdminToggleClick: () -> Unit,
+    onInstallMobileClick: () -> Unit,
     onBackClick: (() -> Unit)? = null
 ) {
     TopAppBar(
@@ -123,6 +124,15 @@ fun EduTopBar(
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
+            }
+
+            // Install Mobile Button
+            IconButton(onClick = onInstallMobileClick) {
+                Icon(
+                    imageVector = Icons.Default.PhoneAndroid,
+                    contentDescription = "Installer sur téléphone",
+                    tint = if (currentScreen == AppScreen.INSTALL_MOBILE) EduCiOrangeAccent else MaterialTheme.colorScheme.primary
+                )
             }
 
             // Admin Toggle Button if user is admin

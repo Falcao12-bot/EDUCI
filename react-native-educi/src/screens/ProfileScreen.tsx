@@ -99,6 +99,23 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           </View>
         </View>
 
+        {/* Install on Mobile Link */}
+        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Installation</Text>
+        <TouchableOpacity
+          style={[styles.cardAction, { backgroundColor: colors.surface, borderColor: colors.border, marginBottom: 14 }]}
+          onPress={() => navigation.navigate('InstallMobile')}
+        >
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.actionTitle, { color: colors.textPrimary }]}>
+              📱 Installer sur mon Téléphone
+            </Text>
+            <Text style={[styles.actionSub, { color: colors.textMuted }]}>
+              QR Code, Fichier APK Android, PWA ou test Expo Go
+            </Text>
+          </View>
+          <Text style={{ fontSize: 18, color: colors.primary }}>➔</Text>
+        </TouchableOpacity>
+
         {/* Owner Management Link */}
         <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Administration</Text>
         <TouchableOpacity
