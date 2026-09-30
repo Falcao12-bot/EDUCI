@@ -1,0 +1,34 @@
+name: Construire EDUCI APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Télécharger le projet
+        uses: actions/checkout@v4
+
+      - name: Installer Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Autoriser Gradle
+        run: chmod +x ./gradlew
+
+      - name: Construire le fichier APK
+        run: ./gradlew assembleDebug
+
+      - name: Enregistrer l'APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: EDUCI-apk
+          path: '**/build/outputs/apk/debug/*.apk'
