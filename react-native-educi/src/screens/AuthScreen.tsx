@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { useAppTheme } from '../context/ThemeContext';
-import { useAuth, OWNER_EMAIL, OWNER_MASTER_KEY } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 export const AuthScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { colors } = useAppTheme();
@@ -52,12 +52,6 @@ export const AuthScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         navigation.navigate('MainTabs');
       }
     }
-  };
-
-  const handleQuickFillOwner = () => {
-    setEmail(OWNER_EMAIL);
-    setMasterKey(OWNER_MASTER_KEY);
-    setShowMasterKeyField(true);
   };
 
   return (
@@ -169,15 +163,7 @@ export const AuthScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             </Text>
           </TouchableOpacity>
 
-          {/* Quick Owner Fill helper for testing */}
-          <TouchableOpacity
-            style={[styles.quickOwnerBtn, { borderColor: colors.border }]}
-            onPress={handleQuickFillOwner}
-          >
-            <Text style={[styles.quickOwnerText, { color: colors.primary }]}>
-              ⚡ Remplissage rapide Propriétaire (Test)
-            </Text>
-          </TouchableOpacity>
+
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -201,6 +187,5 @@ const styles = StyleSheet.create({
   submitBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
   toggleModeBtn: { alignItems: 'center', marginTop: 16 },
   toggleModeText: { fontSize: 13, fontWeight: '600' },
-  quickOwnerBtn: { marginTop: 18, paddingVertical: 10, borderRadius: 10, borderWidth: 1, alignItems: 'center' },
-  quickOwnerText: { fontSize: 12, fontWeight: '700' },
+
 });

@@ -1,4 +1,4 @@
-name: Construire EDUCI APK
+name: Construire et Publier EDUCI APK
 
 on:
   workflow_dispatch:
@@ -10,6 +10,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Télécharger le projet
@@ -27,8 +29,30 @@ jobs:
       - name: Construire le fichier APK
         run: ./gradlew assembleDebug
 
-      - name: Enregistrer l'APK
+      - name: Enregistrer l'APK (artifact)
         uses: actions/upload-artifact@v4
         with:
           name: EDUCI-apk
           path: '**/build/outputs/apk/debug/*.apk'
+
+      - name: Renommer l'APK
+        run: |
+          mkdir -p release
+          find . -path '*/build/outputs/apk/debug/*.apk' -exec cp {} release/EduCI.apk \;
+
+      - name: Créer une Release GitHub avec l'APK
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/EduCI.apk
+          name: EduCI v${{ github.run_number }}
+          tag_name: v${{ github.run_number }}
+          body: |
+            📱 Application éducative ivoirienne EduCI
+            
+            Téléchargez le fichier APK ci-dessous et installez-le sur votre smartphone Android.
+            
+            **Étapes :**
+            1. Téléchargez le fichier `EduCI.apk`
+            2. Autorisez l'installation depuis des sources inconnues
+            3. Ouvrez le fichier et validez l'installation
+          prerelease: false

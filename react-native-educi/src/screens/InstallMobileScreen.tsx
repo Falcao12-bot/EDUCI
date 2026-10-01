@@ -9,30 +9,86 @@ import {
   Share,
   Linking,
   Alert,
+  Image,
+  Platform,
 } from 'react-native';
 import { useAppTheme } from '../context/ThemeContext';
 
-const APP_URL = 'https://ais-pre-ydl7ju6p6m4aztbg3ueyav-673723140411.europe-west1.run.app';
+const GITHUB_REPO = 'https://github.com/Falcao12-bot/EDUCI';
+const APK_RELEASES_URL = `${GITHUB_REPO}/releases`;
+
+/** Récupère dynamiquement l'URL de l'application déployée */
+const getAppUrl = (): string => {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return GITHUB_REPO;
+};
 
 export const InstallMobileScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { colors } = useAppTheme();
   const [activeTab, setActiveTab] = useState<'qr' | 'apk' | 'pwa' | 'expo'>('qr');
 
   const handleShare = async () => {
-    try {
-      await Share.share({
-        message: `📱 Installe l'application éducative ivoirienne EduCI sur ton smartphone pour préparer tes cours et examens officiels :\n${APP_URL}`,
-      });
-    } catch (error) {
+    const url = getAppUrl();
+    const message = `📱 Installe l'application éducative ivoirienne EduCI sur ton smartphone pour préparer tes cours et examens officiels :\n${url}`;
+
+    // Web Share API (navigateurs modernes)
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ title: 'EduCI', text: message, url });
+        return;
+      } catch {
+        // utilisateur a annulé — fallback presse-papiers
+      }
+    }
+
+    // React Native Share (natif)
+    if (Platform.OS !== 'web') {
+      try {
+        await Share.share({ message });
+        return;
+      } catch {
+        // fallback ci-dessous
+      }
+    }
+
+    // Fallback : copier dans le presse-papiers
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(message);
+        Alert.alert('✅ Copié', 'Le lien a été copié dans le presse-papiers. Collez-le dans WhatsApp ou SMS.');
+      } catch {
+        Alert.alert('Erreur', 'Impossible de partager le lien.');
+      }
+    } else {
       Alert.alert('Erreur', 'Impossible de partager le lien.');
     }
   };
 
   const handleOpenUrl = () => {
-    Linking.openURL(APP_URL).catch(() => {
-      Alert.alert('Erreur', 'Impossible d\'ouvrir l\'adresse.');
-    });
+    const url = getAppUrl();
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.open(url, '_blank');
+    } else {
+      Linking.openURL(url).catch(() => {
+        Alert.alert('Erreur', "Impossible d'ouvrir l'adresse.");
+      });
+    }
   };
+
+  const handleDownloadApk = () => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.open(APK_RELEASES_URL, '_blank');
+    } else {
+      Linking.openURL(APK_RELEASES_URL).catch(() => {
+        Alert.alert('Erreur', "Impossible d'accéder au téléchargement.");
+      });
+    }
+  };
+
+  const appUrl = getAppUrl();
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=10&data=${encodeURIComponent(appUrl)}`;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -85,13 +141,17 @@ export const InstallMobileScreen: React.FC<{ navigation: any }> = ({ navigation 
               Scannez ce QR Code depuis votre smartphone pour ouvrir directement l'application et l'installer sur votre écran d'accueil.
             </Text>
 
-            {/* Simulated QR Code box */}
+            {/* QR Code réel */}
             <View style={styles.qrContainer}>
               <View style={[styles.qrFrame, { borderColor: colors.primary }]}>
-                <Text style={styles.qrIcon}>📱</Text>
-                <Text style={[styles.qrText, { color: colors.textPrimary }]}>EduCI Mobile CI</Text>
-                <Text style={[styles.qrSub, { color: colors.accent }]}>Flashez pour installer</Text>
+                <Image
+                  source={{ uri: qrCodeUrl }}
+                  style={styles.qrImage}
+                  resizeMode="contain"
+                />
               </View>
+              <Text style={[styles.qrText, { color: colors.textPrimary, marginTop: 12 }]}>EduCI Mobile CI</Text>
+              <Text style={[styles.qrSub, { color: colors.accent }]}>Flashez pour installer</Text>
             </View>
 
             <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primary }]} onPress={handleShare}>
@@ -119,7 +179,7 @@ export const InstallMobileScreen: React.FC<{ navigation: any }> = ({ navigation 
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.stepTitle, { color: colors.textPrimary }]}>Télécharger l'APK</Text>
                   <Text style={[styles.stepDesc, { color: colors.textSecondary }]}>
-                    Téléchargez le fichier `app-debug.apk` depuis le menu d'export de la plateforme.
+                    Cliquez sur le bouton ci-dessous pour télécharger le fichier APK depuis GitHub Releases.
                   </Text>
                 </View>
               </View>
@@ -149,8 +209,8 @@ export const InstallMobileScreen: React.FC<{ navigation: any }> = ({ navigation 
               </View>
             </View>
 
-            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primary }]} onPress={handleOpenUrl}>
-              <Text style={styles.actionBtnText}>⬇️ Télécharger l'application</Text>
+            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primary }]} onPress={handleDownloadApk}>
+              <Text style={styles.actionBtnText}>⬇️ Télécharger l'APK Android</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -221,8 +281,8 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 17, fontWeight: '800', marginBottom: 6 },
   cardSub: { fontSize: 13, lineHeight: 18, marginBottom: 16 },
   qrContainer: { alignItems: 'center', marginVertical: 14 },
-  qrFrame: { width: 180, height: 180, borderWidth: 2, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF', padding: 16 },
-  qrIcon: { fontSize: 50, marginBottom: 8 },
+  qrFrame: { width: 220, height: 220, borderWidth: 2, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF', padding: 10 },
+  qrImage: { width: 180, height: 180, borderRadius: 8 },
   qrText: { fontSize: 15, fontWeight: '800' },
   qrSub: { fontSize: 12, marginTop: 4 },
   actionBtn: { paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 12 },
