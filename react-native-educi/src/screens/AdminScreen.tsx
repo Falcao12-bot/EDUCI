@@ -12,6 +12,8 @@ import {
 import { useAppTheme } from '../context/ThemeContext';
 import { useAuth, OWNER_EMAIL, OWNER_MASTER_KEY } from '../context/AuthContext';
 import { INITIAL_LESSONS, Lesson, INITIAL_EXERCISES } from '../data/curriculumData';
+import { EditeurBlocs } from '../components/EditeurBlocs';
+import { RichBlock } from '../data/richBlocks';
 
 export const AdminScreen: React.FC = () => {
   const { colors } = useAppTheme();
@@ -29,7 +31,7 @@ export const AdminScreen: React.FC = () => {
   const [lessonClass, setLessonClass] = useState('4e');
   const [lessonChapter, setLessonChapter] = useState('');
   const [lessonSummary, setLessonSummary] = useState('');
-  const [lessonContent, setLessonContent] = useState('');
+  const [lessonBlocks, setLessonBlocks] = useState<RichBlock[]>([]);
 
   const [lessonsList, setLessonsList] = useState<Lesson[]>(INITIAL_LESSONS);
 
@@ -107,10 +109,20 @@ export const AdminScreen: React.FC = () => {
 
   // Admin / Owner Dashboard
   const handleAddLesson = () => {
-    if (!lessonTitle.trim() || !lessonChapter.trim() || !lessonContent.trim()) {
-      Alert.alert('Erreur', 'Veuillez remplir au moins le titre, le chapitre et le contenu.');
+    if (!lessonTitle.trim() || !lessonChapter.trim()) {
+      Alert.alert('Erreur', 'Veuillez remplir au moins le titre et le chapitre.');
       return;
     }
+    if (lessonBlocks.length === 0) {
+      Alert.alert('Erreur', 'Ajoutez au moins un bloc pédagogique (titre, texte, tableau...) avec l\'éditeur riche.');
+      return;
+    }
+
+    // Texte en clair généré à partir des blocs pour compatibilité.
+    const plainText = lessonBlocks
+      .map(b => ('text' in b ? b.text : ''))
+      .filter(t => t.trim())
+      .join('\n');
 
     const newLesson: Lesson = {
       id: `lesson_${Date.now()}`,
@@ -119,16 +131,17 @@ export const AdminScreen: React.FC = () => {
       gradeClass: lessonClass,
       chapter: lessonChapter.trim(),
       summary: lessonSummary.trim() || 'Leçon ajoutée par le propriétaire.',
-      content: lessonContent.trim(),
+      content: plainText || 'Leçon rédigée avec l\'éditeur riche.',
       durationMinutes: 25,
       published: true,
+      blocks: lessonBlocks,
     };
 
     setLessonsList(prev => [newLesson, ...prev]);
     setLessonTitle('');
     setLessonChapter('');
     setLessonSummary('');
-    setLessonContent('');
+    setLessonBlocks([]);
     Alert.alert('Succès', 'Nouvelle leçon publiée avec succès dans le programme !');
   };
 
@@ -245,16 +258,8 @@ export const AdminScreen: React.FC = () => {
                 onChangeText={setLessonSummary}
               />
 
-              <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Contenu complet du cours :</Text>
-              <TextInput
-                style={[styles.textArea, { backgroundColor: colors.surfaceVariant, borderColor: colors.border, color: colors.textPrimary }]}
-                placeholder="Détaillez le cours avec exemples et démonstrations..."
-                placeholderTextColor={colors.textMuted}
-                multiline
-                numberOfLines={6}
-                value={lessonContent}
-                onChangeText={setLessonContent}
-              />
+              <Text style={[styles.inputLabel, { color: colors.textPrimary }]}>Contenu complet du cours (Éditeur Riche) :</Text>
+              <EditeurBlocs initialBlocks={lessonBlocks} onChange={setLessonBlocks} />
 
               <TouchableOpacity style={[styles.submitBtn, { backgroundColor: colors.primary }]} onPress={handleAddLesson}>
                 <Text style={styles.submitBtnText}>Publier la Leçon</Text>

@@ -8,6 +8,8 @@ export interface Lesson {
   content: string;
   durationMinutes: number;
   published: boolean;
+  // Blocs riches créés avec l'éditeur pédagogique (optionnel).
+  blocks?: import('./richBlocks').RichBlock[];
 }
 
 export interface Exercise {
@@ -58,6 +60,37 @@ Donc **BC = √25 = 5 cm**.
 Si dans un triangle ABC, le plus grand côté vérifie BC² = AB² + AC², alors ce triangle est rectangle en A.`,
     durationMinutes: 25,
     published: true,
+    blocks: [
+      { type: 'heading', text: 'Théorème de Pythagore et applications', level: 1 },
+      { type: 'paragraph', text: 'Le théorème de Pythagore est l\'un des outils géométriques les plus importants du programme ivoirien. Il permet de calculer une longueur dans un triangle rectangle et de démontrer qu\'un triangle est rectangle.', bold: true },
+      { type: 'heading', text: '1. Énoncé du Théorème', level: 2 },
+      { type: 'paragraph', text: 'Dans un triangle rectangle, le carré de la longueur de l\'hypoténuse (côté opposé à l\'angle droit) est égal à la somme des carrés des longueurs des deux autres côtés.' },
+      { type: 'formula', text: 'BC² = AB² + AC²' },
+      { type: 'note', variant: 'definition', text: 'L\'hypoténuse est toujours le côté le plus long du triangle rectangle.' },
+      { type: 'paragraph', text: 'Exemple concret : un maçon d\'Abidjan veut vérifier qu\'un mur est droit. Un triangle de côtés 3m, 4m et 5m est rectangle car 3² + 4² = 9 + 16 = 25 = 5². C\'est la méthode du « cordeau 3-4-5 » !', italic: true },
+      { type: 'heading', text: '2. Tableau récapitulatif des triplets usuels', level: 2 },
+      {
+        type: 'table',
+        headers: ['Côté 1', 'Côté 2', 'Hypoténuse'],
+        rows: [
+          ['3', '4', '5'],
+          ['6', '8', '10'],
+          ['5', '12', '13'],
+        ],
+      },
+      { type: 'heading', text: '3. Représentation d\'un triangle rectangle', level: 2 },
+      { type: 'figure', emoji: '📐', label: 'Triangle rectangle ABC en A', caption: 'Triangle rectangle : l\'angle droit est au sommet A.' },
+      { type: 'heading', text: '4. Application : longueur de l\'hypoténuse selon les données', level: 2 },
+      {
+        type: 'graph',
+        title: 'Hypoténuse obtenue pour différentes données',
+        kind: 'bar',
+        labels: ['3×4', '6×8', '5×12'],
+        values: [5, 10, 13],
+      },
+      { type: 'note', variant: 'warning', text: 'Ne confondez jamais l\'hypoténuse avec l\'un des côtés de l\'angle droit ! L\'hypoténuse est toujours opposée à l\'angle droit.' },
+      { type: 'note', variant: 'tip', text: 'Au BEPC, le théorème de Pythagore tombe presque chaque année. Entraînez-vous sur les triplets 3-4-5, 6-8-10 et 5-12-13 pour gagner du temps.' },
+    ],
   },
   {
     id: 'les_pc_01',
