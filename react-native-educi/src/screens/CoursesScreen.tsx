@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useAppTheme } from '../context/ThemeContext';
 import { INITIAL_LESSONS, Lesson } from '../data/curriculumData';
+import { ContenuRich } from '../components/ContenuRich';
 
 export const CoursesScreen: React.FC = () => {
   const { colors } = useAppTheme();
@@ -100,9 +101,13 @@ export const CoursesScreen: React.FC = () => {
               {activeLesson?.chapter} • Durée estimée : {activeLesson?.durationMinutes} min
             </Text>
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <Text style={[styles.lessonContentText, { color: colors.textPrimary }]}>
-              {activeLesson?.content}
-            </Text>
+            {activeLesson?.blocks && activeLesson.blocks.length > 0 ? (
+              <ContenuRich blocks={activeLesson.blocks} />
+            ) : (
+              <Text style={[styles.lessonContentText, { color: colors.textPrimary }]}>
+                {activeLesson?.content}
+              </Text>
+            )}
 
             <TouchableOpacity
               style={[styles.completeBtn, { backgroundColor: colors.primary }]}
