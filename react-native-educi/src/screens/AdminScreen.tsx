@@ -7,7 +7,6 @@ import {
   TextInput,
   TouchableOpacity,
   SafeAreaView,
-  Alert,
 } from 'react-native';
 import { useAppTheme } from '../context/ThemeContext';
 import { useAuth, OWNER_EMAIL, OWNER_MASTER_KEY } from '../context/AuthContext';
@@ -15,15 +14,14 @@ import { useCurriculum } from '../context/CurriculumContext';
 import { Lesson, Exercise, Exam } from '../data/curriculumData';
 import { EditeurBlocs } from '../components/EditeurBlocs';
 import { RichBlock } from '../data/richBlocks';
+import { confirmDialog, alertMessage } from '../utils/alert';
 
 type AdminTab = 'lessons' | 'exercises' | 'exams' | 'users';
 
-const SUBJECTS = ['Mathématiques', 'Physique-Chimie', 'Français', 'SVT', 'Histoire-Géographie', 'Anglais'];
-const CLASSES = ['6e', '5e', '4e', '3e', '2nde', '1ère', 'Terminale'];
 const DIFFICULTIES: Exercise['difficulty'][] = ['Facile', 'Moyen', 'Difficile'];
 const EXAM_TYPES: Exam['examType'][] = ['CEPE', 'BEPC', 'BAC A', 'BAC C', 'BAC D'];
 
-export const AdminScreen: React.FC = () => {
+export const AdminScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { colors } = useAppTheme();
   const { currentUser, isOwnerOrAdmin, claimOwnerAccess } = useAuth();
   const {
@@ -44,7 +42,7 @@ export const AdminScreen: React.FC = () => {
         const success = claimOwnerAccess(inputKey.trim());
         if (success) {
           setErrorMessage('');
-          Alert.alert('Succès', 'Accès Propriétaire déverrouillé avec succès !');
+          alertMessage('Succès', 'Accès Propriétaire déverrouillé avec succès !');
         }
       } else {
         setErrorMessage('Clé secrète incorrecte. Seul le propriétaire légitime possède cette clé.');
@@ -119,16 +117,22 @@ export const AdminScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
+      {/* Header with Back Button */}
       <View style={[styles.adminHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <View>
-          <Text style={[styles.adminHeaderTitle, { color: colors.primary }]}>Console Propriétaire EduCI</Text>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={[styles.backBtnText, { color: colors.primary }]}>← Retour</Text>
+        </TouchableOpacity>
+        <View style={{ flex: 1, marginLeft: 10 }}>
+          <Text style={[styles.adminHeaderTitle, { color: colors.primary }]}>Console Propriétaire</Text>
           <Text style={[styles.adminHeaderSub, { color: colors.textMuted }]}>
-            Connecté : {currentUser?.email || OWNER_EMAIL}
+            {currentUser?.email || OWNER_EMAIL}
           </Text>
         </View>
         <View style={[styles.verifiedBadge, { backgroundColor: colors.badgeBg }]}>
-          <Text style={[styles.verifiedText, { color: colors.primary }]}>✓ Accès Maître</Text>
+          <Text style={[styles.verifiedText, { color: colors.primary }]}>✓ Maître</Text>
         </View>
       </View>
 
@@ -234,11 +238,11 @@ const LessonsAdmin: React.FC<LessonsAdminProps> = ({ colors, lessons, onAdd, onU
 
   const handleSubmit = () => {
     if (!lessonTitle.trim() || !lessonChapter.trim()) {
-      Alert.alert('Erreur', 'Veuillez remplir au moins le titre et le chapitre.');
+      alertMessage('Erreur', 'Veuillez remplir au moins le titre et le chapitre.');
       return;
     }
     if (lessonBlocks.length === 0) {
-      Alert.alert('Erreur', 'Ajoutez au moins un bloc pédagogique (titre, texte, tableau...) avec l\'éditeur riche.');
+      alertMessage('Erreur', 'Ajoutez au moins un bloc pédagogique (titre, texte, tableau...) avec l\'éditeur riche.');
       return;
     }
 
@@ -262,10 +266,10 @@ const LessonsAdmin: React.FC<LessonsAdminProps> = ({ colors, lessons, onAdd, onU
 
     if (editingId) {
       onUpdate(lessonData);
-      Alert.alert('Succès', 'Leçon modifiée avec succès !');
+      alertMessage('Succès', 'Leçon modifiée avec succès !');
     } else {
       onAdd(lessonData);
-      Alert.alert('Succès', 'Nouvelle leçon publiée avec succès !');
+      alertMessage('Succès', 'Nouvelle leçon publiée avec succès !');
     }
     resetForm();
   };
@@ -280,23 +284,16 @@ const LessonsAdmin: React.FC<LessonsAdminProps> = ({ colors, lessons, onAdd, onU
     setLessonBlocks(lesson.blocks || []);
   };
 
-  const handleDelete = (id: string) => {
-    Alert.alert(
+  const handleDelete = async (id: string) => {
+    const confirmed = await confirmDialog(
       'Confirmer la suppression',
-      'Êtes-vous sûr de vouloir supprimer cette leçon ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Supprimer',
-          style: 'destructive',
-          onPress: () => {
-            onDelete(id);
-            if (editingId === id) resetForm();
-            Alert.alert('Succès', 'Leçon supprimée.');
-          },
-        },
-      ]
+      'Êtes-vous sûr de vouloir supprimer cette leçon ?'
     );
+    if (confirmed) {
+      onDelete(id);
+      if (editingId === id) resetForm();
+      alertMessage('Succès', 'Leçon supprimée.');
+    }
   };
 
   return (
@@ -434,11 +431,11 @@ const ExercisesAdmin: React.FC<ExercisesAdminProps> = ({ colors, exercises, onAd
 
   const handleSubmit = () => {
     if (!exTitle.trim() || !exQuestion.trim()) {
-      Alert.alert('Erreur', 'Veuillez remplir le titre et la question.');
+      alertMessage('Erreur', 'Veuillez remplir le titre et la question.');
       return;
     }
     if (exOptions.some(o => !o.trim())) {
-      Alert.alert('Erreur', 'Veuillez remplir les 4 options de réponse.');
+      alertMessage('Erreur', 'Veuillez remplir les 4 options de réponse.');
       return;
     }
 
@@ -456,10 +453,10 @@ const ExercisesAdmin: React.FC<ExercisesAdminProps> = ({ colors, exercises, onAd
 
     if (editingId) {
       onUpdate(exerciseData);
-      Alert.alert('Succès', 'Exercice modifié avec succès !');
+      alertMessage('Succès', 'Exercice modifié avec succès !');
     } else {
       onAdd(exerciseData);
-      Alert.alert('Succès', 'Nouvel exercice ajouté avec succès !');
+      alertMessage('Succès', 'Nouvel exercice ajouté avec succès !');
     }
     resetForm();
   };
@@ -476,23 +473,16 @@ const ExercisesAdmin: React.FC<ExercisesAdminProps> = ({ colors, exercises, onAd
     setExExplanation(ex.explanation);
   };
 
-  const handleDelete = (id: string) => {
-    Alert.alert(
+  const handleDelete = async (id: string) => {
+    const confirmed = await confirmDialog(
       'Confirmer la suppression',
-      'Êtes-vous sûr de vouloir supprimer cet exercice ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Supprimer',
-          style: 'destructive',
-          onPress: () => {
-            onDelete(id);
-            if (editingId === id) resetForm();
-            Alert.alert('Succès', 'Exercice supprimé.');
-          },
-        },
-      ]
+      'Êtes-vous sûr de vouloir supprimer cet exercice ?'
     );
+    if (confirmed) {
+      onDelete(id);
+      if (editingId === id) resetForm();
+      alertMessage('Succès', 'Exercice supprimé.');
+    }
   };
 
   return (
@@ -672,7 +662,7 @@ const ExamsAdmin: React.FC<ExamsAdminProps> = ({ colors, exams, onAdd, onUpdate,
 
   const handleSubmit = () => {
     if (!examTitle.trim() || !examContent.trim()) {
-      Alert.alert('Erreur', 'Veuillez remplir au moins le titre et le contenu de l\'épreuve.');
+      alertMessage('Erreur', 'Veuillez remplir au moins le titre et le contenu de l\'épreuve.');
       return;
     }
 
@@ -690,10 +680,10 @@ const ExamsAdmin: React.FC<ExamsAdminProps> = ({ colors, exams, onAdd, onUpdate,
 
     if (editingId) {
       onUpdate(examData);
-      Alert.alert('Succès', 'Examen modifié avec succès !');
+      alertMessage('Succès', 'Examen modifié avec succès !');
     } else {
       onAdd(examData);
-      Alert.alert('Succès', 'Nouvel examen ajouté avec succès !');
+      alertMessage('Succès', 'Nouvel examen ajouté avec succès !');
     }
     resetForm();
   };
@@ -710,23 +700,16 @@ const ExamsAdmin: React.FC<ExamsAdminProps> = ({ colors, exams, onAdd, onUpdate,
     setExamSolution(exam.solution);
   };
 
-  const handleDelete = (id: string) => {
-    Alert.alert(
+  const handleDelete = async (id: string) => {
+    const confirmed = await confirmDialog(
       'Confirmer la suppression',
-      'Êtes-vous sûr de vouloir supprimer cet examen ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Supprimer',
-          style: 'destructive',
-          onPress: () => {
-            onDelete(id);
-            if (editingId === id) resetForm();
-            Alert.alert('Succès', 'Examen supprimé.');
-          },
-        },
-      ]
+      'Êtes-vous sûr de vouloir supprimer cet examen ?'
     );
+    if (confirmed) {
+      onDelete(id);
+      if (editingId === id) resetForm();
+      alertMessage('Succès', 'Examen supprimé.');
+    }
   };
 
   return (
@@ -881,8 +864,10 @@ const styles = StyleSheet.create({
   infoBanner: { padding: 12, borderRadius: 10, borderWidth: 1, width: '100%' },
   infoBannerText: { fontSize: 12, textAlign: 'center', lineHeight: 18 },
   adminHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1 },
-  adminHeaderTitle: { fontSize: 18, fontWeight: '800' },
-  adminHeaderSub: { fontSize: 12, marginTop: 2 },
+  backBtn: { paddingVertical: 6, paddingHorizontal: 4 },
+  backBtnText: { fontSize: 15, fontWeight: '700' },
+  adminHeaderTitle: { fontSize: 16, fontWeight: '800' },
+  adminHeaderSub: { fontSize: 11, marginTop: 2 },
   verifiedBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   verifiedText: { fontSize: 11, fontWeight: '700' },
   tabBar: { flexDirection: 'row', borderBottomWidth: 1 },
