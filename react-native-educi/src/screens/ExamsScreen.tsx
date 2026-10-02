@@ -8,16 +8,17 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useAppTheme } from '../context/ThemeContext';
-import { INITIAL_EXAMS } from '../data/curriculumData';
+import { useCurriculum } from '../context/CurriculumContext';
 
 export const ExamsScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const { exams } = useCurriculum();
   const [selectedType, setSelectedType] = useState<string>('BEPC');
   const [expandedSolutions, setExpandedSolutions] = useState<Record<string, boolean>>({});
 
   const examTypes = ['CEPE', 'BEPC', 'BAC A', 'BAC C', 'BAC D'];
 
-  const filteredExams = INITIAL_EXAMS.filter(e => e.examType === selectedType);
+  const filteredExams = exams.filter(e => e.examType === selectedType);
 
   const toggleSolution = (examId: string) => {
     setExpandedSolutions(prev => ({ ...prev, [examId]: !prev[examId] }));

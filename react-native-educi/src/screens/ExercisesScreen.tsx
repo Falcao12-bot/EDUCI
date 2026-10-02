@@ -8,10 +8,11 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useAppTheme } from '../context/ThemeContext';
-import { INITIAL_EXERCISES } from '../data/curriculumData';
+import { useCurriculum } from '../context/CurriculumContext';
 
 export const ExercisesScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const { exercises } = useCurriculum();
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
   const [validated, setValidated] = useState<Record<string, boolean>>({});
 
@@ -47,7 +48,7 @@ export const ExercisesScreen: React.FC = () => {
           Testez vos connaissances en temps réel avec explications pédagogiques détaillées.
         </Text>
 
-        {INITIAL_EXERCISES.map((ex, index) => {
+        {exercises.map((ex, index) => {
           const selected = selectedAnswers[ex.id];
           const isValidated = validated[ex.id];
           const isCorrect = selected === ex.correctOptionIndex;

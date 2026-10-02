@@ -9,19 +9,21 @@ import {
   Modal,
 } from 'react-native';
 import { useAppTheme } from '../context/ThemeContext';
-import { INITIAL_LESSONS, Lesson } from '../data/curriculumData';
+import { useCurriculum } from '../context/CurriculumContext';
+import { Lesson } from '../data/curriculumData';
 import { ContenuRich } from '../components/ContenuRich';
 
 export const CoursesScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const { lessons } = useCurriculum();
   const [selectedSubject, setSelectedSubject] = useState<string>('Tous');
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
 
   const subjects = ['Tous', 'Mathématiques', 'Physique-Chimie', 'Français', 'SVT'];
 
   const filteredLessons = selectedSubject === 'Tous'
-    ? INITIAL_LESSONS
-    : INITIAL_LESSONS.filter(l => l.subject === selectedSubject);
+    ? lessons
+    : lessons.filter(l => l.subject === selectedSubject);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
