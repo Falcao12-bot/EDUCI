@@ -22,7 +22,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const classesByLevel = {
     primaire: ['CI', 'CP1', 'CP2', 'CE1', 'CE2', 'CM1', 'CM2'],
     college: ['6e', '5e', '4e', '3e'],
-    lycee: ['2nde', '1ère', 'Tle'],
+    lycee: ['Seconde', 'Première', 'Terminale'],
   };
 
   return (
