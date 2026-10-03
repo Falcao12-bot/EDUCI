@@ -36,6 +36,9 @@ export interface Exam {
   solution: string;
 }
 
+// Leçons de Français 6e extraites du livret de leçons 2026-2027.
+import { FRANCAIS_6E_LESSONS, FRANCAIS_6E_EXERCISES } from './francais6eData';
+
 export const INITIAL_LESSONS: Lesson[] = [
   {
     id: 'les_math_01',
@@ -142,10 +145,13 @@ Tous les êtres vivants respirent : ils absorbent du dioxygène (O₂) et rejett
 - Milieu aquatique : Branchies (Poissons comme le Tilapia et la Carpe).`,
     durationMinutes: 20,
     published: true,
-  }
+  },
+  ...FRANCAIS_6E_LESSONS,
 ];
 
 export const INITIAL_EXERCISES: Exercise[] = [
+  ...FRANCAIS_6E_EXERCISES,
+
   {
     id: 'ex_math_01',
     title: 'Hypoténuse d\'un triangle rectangle',
