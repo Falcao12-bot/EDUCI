@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -19,6 +19,7 @@ import { AuthScreen } from './src/screens/AuthScreen';
 import { InstallMobileScreen } from './src/screens/InstallMobileScreen';
 import { SearchScreen } from './src/screens/SearchScreen';
 import { NotificationsScreen } from './src/screens/NotificationsScreen';
+import { usePwaInstall } from './src/components/PwaSetup';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -98,12 +99,68 @@ function MainTabNavigator() {
   );
 }
 
+function InstallBanner({ canInstall, promptInstall }: { canInstall: boolean; promptInstall: () => Promise<boolean> }) {
+  const { colors } = useAppTheme();
+  const [visible, setVisible] = React.useState(true);
+
+  if (!canInstall || !visible) return null;
+
+  return (
+    <View style={{
+      position: 'absolute',
+      bottom: 70,
+      left: 12,
+      right: 12,
+      backgroundColor: colors.primary,
+      borderRadius: 14,
+      padding: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      zIndex: 999,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 6,
+      elevation: 6,
+    }}>
+      <View style={{ flex: 1, paddingRight: 10 }}>
+        <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '700' }}>
+          📲 Installer EduCI sur votre téléphone
+        </Text>
+        <Text style={{ color: '#FFFFFF', fontSize: 12, marginTop: 2, opacity: 0.9 }}>
+          Icône sur l'écran d'accueil, fonctionne hors-ligne
+        </Text>
+      </View>
+      <TouchableOpacity
+        onPress={async () => {
+          const accepted = await promptInstall();
+          if (accepted) setVisible(false);
+        }}
+        style={{
+          backgroundColor: '#FFFFFF',
+          paddingHorizontal: 16,
+          paddingVertical: 10,
+          borderRadius: 10,
+        }}
+      >
+        <Text style={{ color: colors.primary, fontSize: 14, fontWeight: '800' }}>Installer</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => setVisible(false)} style={{ paddingLeft: 8 }}>
+        <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700' }}>✕</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 function NavigationRoot() {
   const { isDark } = useAppTheme();
+  const { canInstall, promptInstall } = usePwaInstall();
 
   return (
     <NavigationContainer>
       <StatusBar style={isDark ? 'light' : 'dark'} />
+      <InstallBanner canInstall={canInstall} promptInstall={promptInstall} />
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="MainTabs" component={MainTabNavigator} />
         <Stack.Screen name="Admin" component={AdminScreen} />

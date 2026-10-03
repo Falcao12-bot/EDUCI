@@ -8,7 +8,10 @@
     "platforms": ["ios", "android", "web"],
     "web": {
       "bundler": "metro",
-      "favicon": "./assets/favicon.png"
+      "favicon": "./public/favicon-32.png",
+      "meta": {
+        "themeColor": "#008751"
+      }
     },
     "plugins": []
   }
