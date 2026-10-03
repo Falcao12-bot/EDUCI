@@ -9,16 +9,24 @@ import {
   Share,
   Linking,
   Alert,
+  Image,
+  Platform,
 } from 'react-native';
 import { useAppTheme } from '../context/ThemeContext';
 
-const APP_URL = 'https://ais-pre-ydl7ju6p6m4aztbg3ueyav-673723140411.europe-west1.run.app';
+// Récupère dynamiquement l'URL courante (web) au lieu d'une URL codée en dur.
+const APP_URL = typeof window !== 'undefined' ? window.location.origin : '';
+const QR_CODE_URL = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=10&data=${encodeURIComponent(APP_URL)}`;
 
 export const InstallMobileScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { colors } = useAppTheme();
   const [activeTab, setActiveTab] = useState<'qr' | 'apk' | 'pwa' | 'expo'>('qr');
 
   const handleShare = async () => {
+    if (!APP_URL) {
+      Alert.alert('Application non publiée', 'L\'application n\'a pas encore d\'adresse publique. Publiez-la d\'abord pour pouvoir la partager.');
+      return;
+    }
     try {
       await Share.share({
         message: `📱 Installe l'application éducative ivoirienne EduCI sur ton smartphone pour préparer tes cours et examens officiels :\n${APP_URL}`,
@@ -29,6 +37,10 @@ export const InstallMobileScreen: React.FC<{ navigation: any }> = ({ navigation 
   };
 
   const handleOpenUrl = () => {
+    if (!APP_URL) {
+      Alert.alert('Application non publiée', 'L\'application n\'a pas encore d\'adresse publique.');
+      return;
+    }
     Linking.openURL(APP_URL).catch(() => {
       Alert.alert('Erreur', 'Impossible d\'ouvrir l\'adresse.');
     });
@@ -85,20 +97,34 @@ export const InstallMobileScreen: React.FC<{ navigation: any }> = ({ navigation 
               Scannez ce QR Code depuis votre smartphone pour ouvrir directement l'application et l'installer sur votre écran d'accueil.
             </Text>
 
-            {/* Simulated QR Code box */}
+            {/* QR Code réel */}
             <View style={styles.qrContainer}>
               <View style={[styles.qrFrame, { borderColor: colors.primary }]}>
-                <Text style={styles.qrIcon}>📱</Text>
-                <Text style={[styles.qrText, { color: colors.textPrimary }]}>EduCI Mobile CI</Text>
-                <Text style={[styles.qrSub, { color: colors.accent }]}>Flashez pour installer</Text>
+                {APP_URL ? (
+                  <Image
+                    source={{ uri: QR_CODE_URL }}
+                    style={{ width: 160, height: 160 }}
+                    resizeMode="contain"
+                  />
+                ) : (
+                  <Text style={[styles.qrSub, { color: colors.textMuted }]}>
+                    Application non publiée — URL indisponible
+                  </Text>
+                )}
               </View>
+              <Text style={[styles.qrText, { color: colors.textPrimary, marginTop: 8 }]}>EduCI Mobile CI</Text>
+              <Text style={[styles.qrSub, { color: colors.accent }]}>Flashez pour installer</Text>
             </View>
 
             <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primary }]} onPress={handleShare}>
               <Text style={styles.actionBtnText}>📤 Partager le lien par WhatsApp / SMS</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.outlineBtn, { borderColor: colors.border }]} onPress={handleOpenUrl}>
+            <TouchableOpacity
+              style={[styles.outlineBtn, { borderColor: APP_URL ? colors.border : colors.border, opacity: APP_URL ? 1 : 0.5 }]}
+              onPress={handleOpenUrl}
+              disabled={!APP_URL}
+            >
               <Text style={[styles.outlineBtnText, { color: colors.primary }]}>Ouvrir l'adresse dans le navigateur</Text>
             </TouchableOpacity>
           </View>
@@ -149,8 +175,14 @@ export const InstallMobileScreen: React.FC<{ navigation: any }> = ({ navigation 
               </View>
             </View>
 
-            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primary }]} onPress={handleOpenUrl}>
-              <Text style={styles.actionBtnText}>⬇️ Télécharger l'application</Text>
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: APP_URL ? colors.primary : colors.border }]}
+              onPress={handleOpenUrl}
+              disabled={!APP_URL}
+            >
+              <Text style={styles.actionBtnText}>
+                {APP_URL ? '⬇️ Télécharger l\'application' : '⏳ Application non encore publiée'}
+              </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -177,8 +209,14 @@ export const InstallMobileScreen: React.FC<{ navigation: any }> = ({ navigation 
               </Text>
             </View>
 
-            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primary }]} onPress={handleOpenUrl}>
-              <Text style={styles.actionBtnText}>🌐 Ouvrir sur mon téléphone</Text>
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: APP_URL ? colors.primary : colors.border }]}
+              onPress={handleOpenUrl}
+              disabled={!APP_URL}
+            >
+              <Text style={styles.actionBtnText}>
+                {APP_URL ? '🌐 Ouvrir sur mon téléphone' : '⏳ Application non encore publiée'}
+              </Text>
             </TouchableOpacity>
           </View>
         )}
