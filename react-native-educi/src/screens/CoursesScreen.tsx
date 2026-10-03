@@ -15,16 +15,62 @@ import { ContenuRich } from '../components/ContenuRich';
 export const CoursesScreen: React.FC = () => {
   const { colors } = useAppTheme();
   const [selectedSubject, setSelectedSubject] = useState<string>('Tous');
+  const [selectedClass, setSelectedClass] = useState<string>('Tous');
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
 
   const subjects = ['Tous', 'Mathématiques', 'Physique-Chimie', 'Français', 'SVT'];
+  const classes = ['Tous', '6e', '5e', '4e', '3e'];
 
-  const filteredLessons = selectedSubject === 'Tous'
-    ? INITIAL_LESSONS
-    : INITIAL_LESSONS.filter(l => l.subject === selectedSubject);
+  const filteredLessons = INITIAL_LESSONS.filter(l =>
+    (selectedSubject === 'Tous' || l.subject === selectedSubject) &&
+    (selectedClass === 'Tous' || l.gradeClass === selectedClass)
+  );
+
+  // Regrouper par classe quand "Tous" est sélectionné, sinon liste simple.
+  const groupedLessons: { classLabel: string; lessons: Lesson[] }[] =
+    selectedClass !== 'Tous'
+      ? [{ classLabel: selectedClass, lessons: filteredLessons }]
+      : classes
+          .filter(c => c !== 'Tous')
+          .map(c => ({
+            classLabel: c,
+            lessons: filteredLessons.filter(l => l.gradeClass === c),
+          }))
+          .filter(g => g.lessons.length > 0);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Class filter bar */}
+      <View style={[styles.filterBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {classes.map(cls => {
+            const active = selectedClass === cls;
+            return (
+              <TouchableOpacity
+                key={cls}
+                style={[
+                  styles.filterChip,
+                  {
+                    backgroundColor: active ? colors.accent : colors.surfaceVariant,
+                    borderColor: active ? colors.accent : colors.border,
+                  },
+                ]}
+                onPress={() => setSelectedClass(cls)}
+              >
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    { color: active ? '#FFFFFF' : colors.textPrimary, fontWeight: active ? '700' : '500' },
+                  ]}
+                >
+                  {cls === 'Tous' ? 'Toutes classes' : `Classe de ${cls}`}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+
       {/* Subjects filter bar */}
       <View style={[styles.filterBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -58,27 +104,36 @@ export const CoursesScreen: React.FC = () => {
 
       <ScrollView contentContainerStyle={styles.listContent}>
         <Text style={[styles.countText, { color: colors.textMuted }]}>
-          {filteredLessons.length} leçons disponibles selon le programme officiel
+          {filteredLessons.length} leçon{filteredLessons.length > 1 ? 's' : ''} disponible{filteredLessons.length > 1 ? 's' : ''} selon le programme officiel
         </Text>
 
-        {filteredLessons.map(lesson => (
-          <TouchableOpacity
-            key={lesson.id}
-            style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
-            onPress={() => setActiveLesson(lesson)}
-          >
-            <View style={styles.cardHeader}>
-              <View style={[styles.badge, { backgroundColor: colors.badgeBg }]}>
-                <Text style={[styles.badgeText, { color: colors.primary }]}>{lesson.subject}</Text>
-              </View>
-              <Text style={[styles.metaText, { color: colors.textMuted }]}>
-                {lesson.gradeClass} • {lesson.durationMinutes} min
+        {groupedLessons.map(group => (
+          <View key={group.classLabel}>
+            {groupedLessons.length > 1 && (
+              <Text style={[styles.groupHeader, { color: colors.accent }]}>
+                Classe de {group.classLabel}
               </Text>
-            </View>
-            <Text style={[styles.title, { color: colors.textPrimary }]}>{lesson.title}</Text>
-            <Text style={[styles.chapter, { color: colors.accent }]}>Chapitre : {lesson.chapter}</Text>
-            <Text style={[styles.summary, { color: colors.textSecondary }]}>{lesson.summary}</Text>
-          </TouchableOpacity>
+            )}
+            {group.lessons.map(lesson => (
+              <TouchableOpacity
+                key={lesson.id}
+                style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                onPress={() => setActiveLesson(lesson)}
+              >
+                <View style={styles.cardHeader}>
+                  <View style={[styles.badge, { backgroundColor: colors.badgeBg }]}>
+                    <Text style={[styles.badgeText, { color: colors.primary }]}>{lesson.subject}</Text>
+                  </View>
+                  <Text style={[styles.metaText, { color: colors.textMuted }]}>
+                    {lesson.gradeClass} • {lesson.durationMinutes} min
+                  </Text>
+                </View>
+                <Text style={[styles.title, { color: colors.textPrimary }]}>{lesson.title}</Text>
+                <Text style={[styles.chapter, { color: colors.accent }]}>Chapitre : {lesson.chapter}</Text>
+                <Text style={[styles.summary, { color: colors.textSecondary }]}>{lesson.summary}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         ))}
       </ScrollView>
 
@@ -132,6 +187,7 @@ const styles = StyleSheet.create({
   filterChipText: { fontSize: 13 },
   listContent: { padding: 16, paddingBottom: 40 },
   countText: { fontSize: 12, marginBottom: 12 },
+  groupHeader: { fontSize: 15, fontWeight: '800', marginTop: 16, marginBottom: 8, textTransform: 'uppercase' },
   card: { padding: 16, borderRadius: 14, borderWidth: 1, marginBottom: 12 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
