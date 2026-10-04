@@ -9,10 +9,14 @@ import {
   Share,
   Linking,
   Alert,
+  Platform,
 } from 'react-native';
 import { useAppTheme } from '../context/ThemeContext';
 
-const APP_URL = 'https://ais-pre-ydl7ju6p6m4aztbg3ueyav-673723140411.europe-west1.run.app';
+// Lien public permanent via EXPO_PUBLIC_APP_URL ; sinon, sur le web, l'adresse où l'app est ouverte.
+const APP_URL =
+  process.env.EXPO_PUBLIC_APP_URL ||
+  (Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : '');
 
 export const InstallMobileScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { colors } = useAppTheme();

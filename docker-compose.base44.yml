@@ -8,14 +8,14 @@ services:
       - "3000:3000"
     environment:
       - EXPO_NO_TELEMETRY=true
+      - REACT_NATIVE_PACKAGER_HOSTNAME=0.0.0.0
       - WATCHPACK_POLLING=true
     command:
       - sh
       - -ec
       - |
         npm install --no-audit --no-fund
-        npx expo export --platform web
-        exec node serve-prod.js
+        exec npx expo start --web --port 3000 --host lan
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 15s
