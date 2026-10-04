@@ -98,7 +98,7 @@ export const AdminScreen: React.FC = () => {
 
             <View style={[styles.infoBanner, { backgroundColor: colors.badgeBg, borderColor: colors.primary }]}>
               <Text style={[styles.infoBannerText, { color: colors.primary }]}>
-                Note pour les tests autorisés : La clé configurée est EDUCI-PROPRIETAIRE-2026.
+                🔒 La clé propriétaire est confidentielle. Seul le fondateur d'EduCI la possède.
               </Text>
             </View>
           </View>
