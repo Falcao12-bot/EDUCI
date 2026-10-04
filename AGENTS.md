@@ -24,3 +24,9 @@ The web service installs npm deps on startup, then runs `expo start --web --port
 - `docker compose -f docker-compose.base44.yml ps` — web service should be healthy.
 - `curl -s http://localhost:3000` — should return the Expo HTML shell.
 - First bundle may take 30–60s; the healthcheck has a 120s start period.
+
+## Web deployment (GitHub Pages)
+- Workflow: `.github/workflows/deploy-web.yml` — builds `npx expo export --platform web` and deploys to GitHub Pages on push to `main`/`master`.
+- Requires repo Settings → Pages → Source = "GitHub Actions".
+- The app is served under `https://<owner>.github.io/EDUCI/`; the workflow rewrites absolute paths to relative so assets load under the subpath.
+- `EXPO_PUBLIC_APP_URL` is set at build time so the InstallMobileScreen share/open buttons point to the Pages URL.
