@@ -14,45 +14,100 @@ import { ContenuRich } from '../components/ContenuRich';
 
 export const CoursesScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const [selectedLevel, setSelectedLevel] = useState<string>('Tous');
+  const [selectedClass, setSelectedClass] = useState<string>('Tous');
   const [selectedSubject, setSelectedSubject] = useState<string>('Tous');
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
 
-  const subjects = ['Tous', 'Mathématiques', 'Physique-Chimie', 'Français', 'SVT'];
+  // Mapping classe → niveau
+  const CLASS_TO_LEVEL: Record<string, string> = {
+    '6e': 'Collège', '5e': 'Collège', '4e': 'Collège', '3e': 'Collège',
+    'CM2': 'Primaire', 'CM1': 'Primaire',
+    '2nde': 'Lycée', '1ère': 'Lycée', 'Terminale': 'Lycée',
+  };
 
-  const filteredLessons = selectedSubject === 'Tous'
-    ? INITIAL_LESSONS
-    : INITIAL_LESSONS.filter(l => l.subject === selectedSubject);
+  const levels = ['Tous', 'Primaire', 'Collège', 'Lycée'];
+
+  // Classes disponibles selon le niveau choisi
+  const availableClasses = ['Tous', ...Array.from(
+    new Set(
+      INITIAL_LESSONS
+        .filter(l => selectedLevel === 'Tous' || CLASS_TO_LEVEL[l.gradeClass] === selectedLevel)
+        .map(l => l.gradeClass)
+    )
+  ).sort()];
+
+  // Matières disponibles selon le niveau et la classe choisis
+  const availableSubjects = ['Tous', ...Array.from(
+    new Set(
+      INITIAL_LESSONS
+        .filter(l => selectedLevel === 'Tous' || CLASS_TO_LEVEL[l.gradeClass] === selectedLevel)
+        .filter(l => selectedClass === 'Tous' || l.gradeClass === selectedClass)
+        .map(l => l.subject)
+    )
+  )];
+
+  const filteredLessons = INITIAL_LESSONS
+    .filter(l => selectedLevel === 'Tous' || CLASS_TO_LEVEL[l.gradeClass] === selectedLevel)
+    .filter(l => selectedClass === 'Tous' || l.gradeClass === selectedClass)
+    .filter(l => selectedSubject === 'Tous' || l.subject === selectedSubject);
+
+  const resetClass = (level: string) => {
+    setSelectedLevel(level);
+    setSelectedClass('Tous');
+    setSelectedSubject('Tous');
+  };
+  const resetSubject = (cls: string) => {
+    setSelectedClass(cls);
+    setSelectedSubject('Tous');
+  };
+
+  const renderChip = (label: string, active: boolean, onPress: () => void) => (
+    <TouchableOpacity
+      key={label}
+      style={[
+        styles.filterChip,
+        {
+          backgroundColor: active ? colors.primary : colors.surfaceVariant,
+          borderColor: active ? colors.primary : colors.border,
+        },
+      ]}
+      onPress={onPress}
+    >
+      <Text
+        style={[
+          styles.filterChipText,
+          { color: active ? '#FFFFFF' : colors.textPrimary, fontWeight: active ? '700' : '500' },
+        ]}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Subjects filter bar */}
+      {/* Niveau filter bar */}
       <View style={[styles.filterBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <Text style={[styles.filterLabel, { color: colors.textMuted }]}>Niveau</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {subjects.map(subj => {
-            const active = selectedSubject === subj;
-            return (
-              <TouchableOpacity
-                key={subj}
-                style={[
-                  styles.filterChip,
-                  {
-                    backgroundColor: active ? colors.primary : colors.surfaceVariant,
-                    borderColor: active ? colors.primary : colors.border,
-                  },
-                ]}
-                onPress={() => setSelectedSubject(subj)}
-              >
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    { color: active ? '#FFFFFF' : colors.textPrimary, fontWeight: active ? '700' : '500' },
-                  ]}
-                >
-                  {subj}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+          {levels.map(lvl => renderChip(lvl, selectedLevel === lvl, () => resetClass(lvl)))}
+        </ScrollView>
+      </View>
+
+      {/* Classe filter bar */}
+      <View style={[styles.filterBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <Text style={[styles.filterLabel, { color: colors.textMuted }]}>Classe</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {availableClasses.map(cls => renderChip(cls, selectedClass === cls, () => resetSubject(cls)))}
+        </ScrollView>
+      </View>
+
+      {/* Matière filter bar */}
+      <View style={[styles.filterBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <Text style={[styles.filterLabel, { color: colors.textMuted }]}>Matière</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {availableSubjects.map(subj => renderChip(subj, selectedSubject === subj, () => setSelectedSubject(subj)))}
         </ScrollView>
       </View>
 
@@ -127,7 +182,8 @@ export const CoursesScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  filterBar: { paddingVertical: 10, paddingHorizontal: 16, borderBottomWidth: 1 },
+  filterBar: { paddingVertical: 8, paddingHorizontal: 16, borderBottomWidth: 1 },
+  filterLabel: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', marginBottom: 6 },
   filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, borderWidth: 1, marginRight: 8 },
   filterChipText: { fontSize: 13 },
   listContent: { padding: 16, paddingBottom: 40 },
