@@ -12,129 +12,178 @@ import { useAppTheme } from '../context/ThemeContext';
 import { INITIAL_LESSONS, Lesson } from '../data/curriculumData';
 import { ContenuRich } from '../components/ContenuRich';
 
+type Level = 'primaire' | 'college' | 'lycee';
+
+const CLASSES_BY_LEVEL: Record<Level, string[]> = {
+  primaire: ['CI', 'CP1', 'CP2', 'CE1', 'CE2', 'CM1', 'CM2'],
+  college: ['6e', '5e', '4e', '3e'],
+  lycee: ['2nde', '1ère', 'Tle'],
+};
+
+const LEVEL_LABELS: Record<Level, string> = {
+  primaire: 'Primaire',
+  college: 'Collège',
+  lycee: 'Lycée',
+};
+
 export const CoursesScreen: React.FC = () => {
   const { colors } = useAppTheme();
-  const [selectedLevel, setSelectedLevel] = useState<string>('Tous');
-  const [selectedClass, setSelectedClass] = useState<string>('Tous');
+  const [selectedLevel, setSelectedLevel] = useState<Level>('college');
+  const [selectedClass, setSelectedClass] = useState<string>('5e');
   const [selectedSubject, setSelectedSubject] = useState<string>('Tous');
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
 
-  // Mapping classe → niveau
-  const CLASS_TO_LEVEL: Record<string, string> = {
-    '6e': 'Collège', '5e': 'Collège', '4e': 'Collège', '3e': 'Collège',
-    'CM2': 'Primaire', 'CM1': 'Primaire',
-    '2nde': 'Lycée', '1ère': 'Lycée', 'Terminale': 'Lycée',
-  };
+  // Leçons de la classe sélectionnée
+  const classLessons = INITIAL_LESSONS.filter(l => l.gradeClass === selectedClass);
 
-  const levels = ['Tous', 'Primaire', 'Collège', 'Lycée'];
+  // Matières disponibles pour cette classe
+  const availableSubjects = ['Tous', ...Array.from(new Set(classLessons.map(l => l.subject)))];
 
-  // Classes disponibles selon le niveau choisi
-  const availableClasses = ['Tous', ...Array.from(
-    new Set(
-      INITIAL_LESSONS
-        .filter(l => selectedLevel === 'Tous' || CLASS_TO_LEVEL[l.gradeClass] === selectedLevel)
-        .map(l => l.gradeClass)
-    )
-  ).sort()];
+  const filteredLessons = selectedSubject === 'Tous'
+    ? classLessons
+    : classLessons.filter(l => l.subject === selectedSubject);
 
-  // Matières disponibles selon le niveau et la classe choisis
-  const availableSubjects = ['Tous', ...Array.from(
-    new Set(
-      INITIAL_LESSONS
-        .filter(l => selectedLevel === 'Tous' || CLASS_TO_LEVEL[l.gradeClass] === selectedLevel)
-        .filter(l => selectedClass === 'Tous' || l.gradeClass === selectedClass)
-        .map(l => l.subject)
-    )
-  )];
-
-  const filteredLessons = INITIAL_LESSONS
-    .filter(l => selectedLevel === 'Tous' || CLASS_TO_LEVEL[l.gradeClass] === selectedLevel)
-    .filter(l => selectedClass === 'Tous' || l.gradeClass === selectedClass)
-    .filter(l => selectedSubject === 'Tous' || l.subject === selectedSubject);
-
-  const resetClass = (level: string) => {
+  const switchLevel = (level: Level) => {
     setSelectedLevel(level);
-    setSelectedClass('Tous');
+    setSelectedClass(CLASSES_BY_LEVEL[level][0]);
     setSelectedSubject('Tous');
   };
-  const resetSubject = (cls: string) => {
+
+  const switchClass = (cls: string) => {
     setSelectedClass(cls);
     setSelectedSubject('Tous');
   };
 
-  const renderChip = (label: string, active: boolean, onPress: () => void) => (
-    <TouchableOpacity
-      key={label}
-      style={[
-        styles.filterChip,
-        {
-          backgroundColor: active ? colors.primary : colors.surfaceVariant,
-          borderColor: active ? colors.primary : colors.border,
-        },
-      ]}
-      onPress={onPress}
-    >
-      <Text
-        style={[
-          styles.filterChipText,
-          { color: active ? '#FFFFFF' : colors.textPrimary, fontWeight: active ? '700' : '500' },
-        ]}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Niveau filter bar */}
+      {/* Level tabs */}
       <View style={[styles.filterBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <Text style={[styles.filterLabel, { color: colors.textMuted }]}>Niveau</Text>
+        <View style={styles.levelRow}>
+          {(['primaire', 'college', 'lycee'] as Level[]).map(level => {
+            const active = selectedLevel === level;
+            return (
+              <TouchableOpacity
+                key={level}
+                style={[
+                  styles.levelTab,
+                  {
+                    backgroundColor: active ? colors.primary : colors.surface,
+                    borderColor: active ? colors.primary : colors.border,
+                  },
+                ]}
+                onPress={() => switchLevel(level)}
+              >
+                <Text
+                  style={[
+                    styles.levelTabText,
+                    { color: active ? '#FFFFFF' : colors.textSecondary, fontWeight: active ? '700' : '500' },
+                  ]}
+                >
+                  {LEVEL_LABELS[level]}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* Class chips */}
+      <View style={[styles.filterBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {levels.map(lvl => renderChip(lvl, selectedLevel === lvl, () => resetClass(lvl)))}
+          {CLASSES_BY_LEVEL[selectedLevel].map(cls => {
+            const active = selectedClass === cls;
+            return (
+              <TouchableOpacity
+                key={cls}
+                style={[
+                  styles.classChip,
+                  {
+                    backgroundColor: active ? colors.accent : colors.surfaceVariant,
+                    borderColor: active ? colors.accent : colors.border,
+                  },
+                ]}
+                onPress={() => switchClass(cls)}
+              >
+                <Text
+                  style={[
+                    styles.classChipText,
+                    { color: active ? '#FFFFFF' : colors.textPrimary, fontWeight: active ? '700' : '600' },
+                  ]}
+                >
+                  {cls}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
 
-      {/* Classe filter bar */}
-      <View style={[styles.filterBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <Text style={[styles.filterLabel, { color: colors.textMuted }]}>Classe</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {availableClasses.map(cls => renderChip(cls, selectedClass === cls, () => resetSubject(cls)))}
-        </ScrollView>
-      </View>
-
-      {/* Matière filter bar */}
-      <View style={[styles.filterBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <Text style={[styles.filterLabel, { color: colors.textMuted }]}>Matière</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {availableSubjects.map(subj => renderChip(subj, selectedSubject === subj, () => setSelectedSubject(subj)))}
-        </ScrollView>
-      </View>
+      {/* Subject filter (within class) */}
+      {availableSubjects.length > 2 && (
+        <View style={[styles.filterBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {availableSubjects.map(subj => {
+              const active = selectedSubject === subj;
+              return (
+                <TouchableOpacity
+                  key={subj}
+                  style={[
+                    styles.subjectChip,
+                    {
+                      backgroundColor: active ? colors.primary : colors.surfaceVariant,
+                      borderColor: active ? colors.primary : colors.border,
+                    },
+                  ]}
+                  onPress={() => setSelectedSubject(subj)}
+                >
+                  <Text
+                    style={[
+                      styles.subjectChipText,
+                      { color: active ? '#FFFFFF' : colors.textPrimary, fontWeight: active ? '700' : '500' },
+                    ]}
+                  >
+                    {subj}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
 
       <ScrollView contentContainerStyle={styles.listContent}>
         <Text style={[styles.countText, { color: colors.textMuted }]}>
-          {filteredLessons.length} leçons disponibles selon le programme officiel
+          {filteredLessons.length} leçon{filteredLessons.length > 1 ? 's' : ''} • {LEVEL_LABELS[selectedLevel]} — Classe de {selectedClass}
         </Text>
 
-        {filteredLessons.map(lesson => (
-          <TouchableOpacity
-            key={lesson.id}
-            style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
-            onPress={() => setActiveLesson(lesson)}
-          >
-            <View style={styles.cardHeader}>
-              <View style={[styles.badge, { backgroundColor: colors.badgeBg }]}>
-                <Text style={[styles.badgeText, { color: colors.primary }]}>{lesson.subject}</Text>
+        {filteredLessons.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>📭</Text>
+            <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+              Aucune leçon disponible pour la classe de {selectedClass}.
+            </Text>
+          </View>
+        ) : (
+          filteredLessons.map(lesson => (
+            <TouchableOpacity
+              key={lesson.id}
+              style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              onPress={() => setActiveLesson(lesson)}
+            >
+              <View style={styles.cardHeader}>
+                <View style={[styles.badge, { backgroundColor: colors.badgeBg }]}>
+                  <Text style={[styles.badgeText, { color: colors.primary }]}>{lesson.subject}</Text>
+                </View>
+                <Text style={[styles.metaText, { color: colors.textMuted }]}>
+                  {lesson.gradeClass} • {lesson.durationMinutes} min
+                </Text>
               </View>
-              <Text style={[styles.metaText, { color: colors.textMuted }]}>
-                {lesson.gradeClass} • {lesson.durationMinutes} min
-              </Text>
-            </View>
-            <Text style={[styles.title, { color: colors.textPrimary }]}>{lesson.title}</Text>
-            <Text style={[styles.chapter, { color: colors.accent }]}>Chapitre : {lesson.chapter}</Text>
-            <Text style={[styles.summary, { color: colors.textSecondary }]}>{lesson.summary}</Text>
-          </TouchableOpacity>
-        ))}
+              <Text style={[styles.title, { color: colors.textPrimary }]}>{lesson.title}</Text>
+              <Text style={[styles.chapter, { color: colors.accent }]}>Chapitre : {lesson.chapter}</Text>
+              <Text style={[styles.summary, { color: colors.textSecondary }]}>{lesson.summary}</Text>
+            </TouchableOpacity>
+          ))
+        )}
       </ScrollView>
 
       {/* Lesson Reader Modal */}
@@ -182,12 +231,19 @@ export const CoursesScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  filterBar: { paddingVertical: 8, paddingHorizontal: 16, borderBottomWidth: 1 },
-  filterLabel: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', marginBottom: 6 },
-  filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, borderWidth: 1, marginRight: 8 },
-  filterChipText: { fontSize: 13 },
+  filterBar: { paddingVertical: 10, paddingHorizontal: 16, borderBottomWidth: 1 },
+  levelRow: { flexDirection: 'row', gap: 8 },
+  levelTab: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1, alignItems: 'center' },
+  levelTabText: { fontSize: 14 },
+  classChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, marginRight: 8 },
+  classChipText: { fontSize: 13 },
+  subjectChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, borderWidth: 1, marginRight: 8 },
+  subjectChipText: { fontSize: 13 },
   listContent: { padding: 16, paddingBottom: 40 },
   countText: { fontSize: 12, marginBottom: 12 },
+  emptyState: { alignItems: 'center', paddingVertical: 60 },
+  emptyIcon: { fontSize: 40, marginBottom: 12 },
+  emptyText: { fontSize: 14, textAlign: 'center' },
   card: { padding: 16, borderRadius: 14, borderWidth: 1, marginBottom: 12 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
