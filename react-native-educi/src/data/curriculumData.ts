@@ -36,7 +36,11 @@ export interface Exam {
   solution: string;
 }
 
+import { LESSONS_MATH_5E } from './lessonsMath5e';
+
 export const INITIAL_LESSONS: Lesson[] = [
+  ...LESSONS_MATH_5E,
+
   {
     id: 'les_math_01',
     title: 'Théorème de Pythagore et applications',
