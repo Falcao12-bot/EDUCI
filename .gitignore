@@ -16,3 +16,5 @@
 local.properties
 .env
 debug.keystore
+# Expo generated cache
+react-native-educi/.expo/
