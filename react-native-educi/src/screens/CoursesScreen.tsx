@@ -24,9 +24,11 @@ export const CoursesScreen: React.FC = () => {
   const [classFilter, setClassFilter] = useState<string>('Toutes');
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
 
-  const subjects = ['Tous', 'Mathématiques', 'Physique-Chimie', 'Français', 'SVT'];
-
   const publishedLessons = lessons.filter(l => l.published);
+  const subjects = [
+    'Tous',
+    ...Array.from(new Set(publishedLessons.map(l => l.subject))).sort((a, b) => a.localeCompare(b)),
+  ];
   const classFilters = [
     'Toutes',
     ...sortClasses(publishedLessons.map(l => l.gradeClass)),

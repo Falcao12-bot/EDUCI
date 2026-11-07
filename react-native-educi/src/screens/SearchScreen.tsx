@@ -94,7 +94,7 @@ export const SearchScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               Tapez un mot clé pour explorer simultanément les leçons, les épreuves d'examen et les exercices corrigés.
             </Text>
             <View style={styles.suggestChips}>
-              {['Pythagore', 'BEPC', 'Physique', 'BAC D', 'Accord'].map(tag => (
+              {['Pythagore', 'Thalès', 'CEPE', 'BEPC', 'BAC D', 'cacao'].map(tag => (
                 <TouchableOpacity
                   key={tag}
                   style={[styles.tagChip, { backgroundColor: colors.badgeBg, borderColor: colors.primary }]}

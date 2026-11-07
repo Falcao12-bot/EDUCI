@@ -10,13 +10,28 @@ import {
 import { useAppTheme } from '../context/ThemeContext';
 import { useAppData } from '../context/AppDataContext';
 import { INITIAL_EXERCISES } from '../data/curriculumData';
+import { sortClasses } from '../utils/classes';
 
 export const ExercisesScreen: React.FC = () => {
   const { colors } = useAppTheme();
   const { progress, recordExerciseResult, clearExerciseResult } = useAppData();
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
+  const [selectedSubject, setSelectedSubject] = useState<string>('Tous');
+  const [classFilter, setClassFilter] = useState<string>('Toutes');
 
   const successCount = INITIAL_EXERCISES.filter(ex => progress.exerciseResults[ex.id]?.correct).length;
+
+  const subjects = [
+    'Tous',
+    ...Array.from(new Set(INITIAL_EXERCISES.map(ex => ex.subject))).sort((a, b) => a.localeCompare(b)),
+  ];
+  const classFilters = ['Toutes', ...sortClasses(INITIAL_EXERCISES.map(ex => ex.gradeClass))];
+  const activeClassFilter = classFilters.includes(classFilter) ? classFilter : 'Toutes';
+  const filteredExercises = INITIAL_EXERCISES.filter(
+    ex =>
+      (selectedSubject === 'Tous' || ex.subject === selectedSubject) &&
+      (activeClassFilter === 'Toutes' || ex.gradeClass === activeClassFilter)
+  );
 
   const handleSelectOption = (exerciseId: string, optionIndex: number) => {
     if (progress.exerciseResults[exerciseId]) return;
@@ -46,6 +61,68 @@ export const ExercisesScreen: React.FC = () => {
           Testez vos connaissances en temps réel avec explications pédagogiques détaillées.
         </Text>
 
+        {/* Filtre par matière */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow}>
+          {subjects.map(subj => {
+            const active = selectedSubject === subj;
+            return (
+              <TouchableOpacity
+                key={subj}
+                style={[
+                  styles.filterChip,
+                  {
+                    backgroundColor: active ? colors.primary : colors.surfaceVariant,
+                    borderColor: active ? colors.primary : colors.border,
+                  },
+                ]}
+                onPress={() => setSelectedSubject(subj)}
+              >
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    { color: active ? '#FFFFFF' : colors.textPrimary, fontWeight: active ? '700' : '500' },
+                  ]}
+                >
+                  {subj}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* Filtre par classe */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow}>
+          {classFilters.map(cls => {
+            const active = activeClassFilter === cls;
+            return (
+              <TouchableOpacity
+                key={cls}
+                style={[
+                  styles.filterChip,
+                  {
+                    backgroundColor: active ? colors.accent : colors.surfaceVariant,
+                    borderColor: active ? colors.accent : colors.border,
+                  },
+                ]}
+                onPress={() => setClassFilter(cls)}
+              >
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    { color: active ? '#FFFFFF' : colors.textPrimary, fontWeight: active ? '700' : '500' },
+                  ]}
+                >
+                  {cls === 'Toutes' ? 'Toutes les classes' : cls}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        <Text style={[styles.countText, { color: colors.textMuted }]}>
+          {filteredExercises.length} exercice(s) auto-corrigé(s)
+        </Text>
+
         {successCount > 0 && (
           <View style={[styles.progressBanner, { backgroundColor: colors.badgeBg, borderColor: colors.primary }]}>
             <Text style={[styles.progressText, { color: colors.primary }]}>
@@ -54,7 +131,7 @@ export const ExercisesScreen: React.FC = () => {
           </View>
         )}
 
-        {INITIAL_EXERCISES.map((ex, index) => {
+        {filteredExercises.map((ex, index) => {
           const storedResult = progress.exerciseResults[ex.id];
           const selected = selectedAnswers[ex.id] ?? storedResult?.selected;
           const isValidated = storedResult !== undefined;
@@ -169,7 +246,11 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 40 },
   headerTitle: { fontSize: 20, fontWeight: '800', marginBottom: 4 },
-  headerSubtitle: { fontSize: 13, marginBottom: 16 },
+  headerSubtitle: { fontSize: 13, marginBottom: 12 },
+  filterRow: { marginBottom: 8 },
+  filterChip: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14, borderWidth: 1, marginRight: 8 },
+  filterChipText: { fontSize: 12 },
+  countText: { fontSize: 12, marginTop: 4, marginBottom: 12 },
   progressBanner: { padding: 10, borderRadius: 10, borderWidth: 1, marginBottom: 14 },
   progressText: { fontSize: 12, fontWeight: '700', textAlign: 'center' },
   card: { padding: 16, borderRadius: 16, borderWidth: 1, marginBottom: 16 },

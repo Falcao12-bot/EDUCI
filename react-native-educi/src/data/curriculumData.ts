@@ -1,40 +1,11 @@
-export interface Lesson {
-  id: string;
-  title: string;
-  subject: string;
-  gradeClass: string;
-  chapter: string;
-  summary: string;
-  content: string;
-  durationMinutes: number;
-  published: boolean;
-  // Blocs riches créés avec l'éditeur pédagogique (optionnel).
-  blocks?: import('./richBlocks').RichBlock[];
-}
+import type { Exercise, Exam, Lesson } from './types';
+import { PRIMAIRE_LESSONS } from './curriculumPrimaire';
+import { COLLEGE_LESSONS } from './curriculumCollege';
+import { LYCEE_LESSONS } from './curriculumLycee';
+import { EXERCISES_BANK } from './exercisesBank';
+import { EXAMS_BANK } from './examsBank';
 
-export interface Exercise {
-  id: string;
-  title: string;
-  subject: string;
-  gradeClass: string;
-  difficulty: 'Facile' | 'Moyen' | 'Difficile';
-  question: string;
-  options: string[];
-  correctOptionIndex: number;
-  explanation: string;
-}
-
-export interface Exam {
-  id: string;
-  title: string;
-  examType: 'CEPE' | 'BEPC' | 'BAC A' | 'BAC C' | 'BAC D';
-  year: number;
-  subject: string;
-  durationMinutes: number;
-  instructions: string;
-  content: string;
-  solution: string;
-}
+export type { Exercise, Exam, Lesson } from './types';
 
 export const INITIAL_LESSONS: Lesson[] = [
   {
@@ -142,7 +113,10 @@ Tous les êtres vivants respirent : ils absorbent du dioxygène (O₂) et rejett
 - Milieu aquatique : Branchies (Poissons comme le Tilapia et la Carpe).`,
     durationMinutes: 20,
     published: true,
-  }
+  },
+  ...PRIMAIRE_LESSONS,
+  ...COLLEGE_LESSONS,
+  ...LYCEE_LESSONS,
 ];
 
 export const INITIAL_EXERCISES: Exercise[] = [
@@ -178,7 +152,8 @@ export const INITIAL_EXERCISES: Exercise[] = [
     options: ['1 kg', '2 kg', '500 g', '4 kg'],
     correctOptionIndex: 1,
     explanation: 'Puisque la masse volumique de l\'eau est de 1 kg/L, 2 litres d\'eau correspondent exactement à 2 kg.',
-  }
+  },
+  ...EXERCISES_BANK,
 ];
 
 export const INITIAL_EXAMS: Exam[] = [
@@ -221,5 +196,6 @@ Lancement d'un projectile depuis une hauteur h = 1,50 m avec une vitesse initial
     solution: `### Corrigé Chimie :
 1. Équation bilan : S2O3²⁻ + 2H3O⁺ -> S + SO2 + 3H2O.
 Le soufre précipite sous forme solide, ce qui provoque l'opacité progressive.`,
-  }
+  },
+  ...EXAMS_BANK,
 ];
