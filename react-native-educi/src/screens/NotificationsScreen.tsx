@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useAppTheme } from '../context/ThemeContext';
+import { useAppData } from '../context/AppDataContext';
 
 interface AppNotification {
   id: string;
@@ -55,17 +56,29 @@ const INITIAL_NOTIFICATIONS: AppNotification[] = [
 
 export const NotificationsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { colors } = useAppTheme();
-  const [notifications, setNotifications] = useState<AppNotification[]>(INITIAL_NOTIFICATIONS);
+  const { ready, readNotificationIds, setReadNotificationIds } = useAppData();
+
+  const notifications = INITIAL_NOTIFICATIONS;
+
+  // Première visite : on conserve les notifications déjà lues par défaut.
+  useEffect(() => {
+    if (ready && readNotificationIds.length === 0) {
+      setReadNotificationIds(INITIAL_NOTIFICATIONS.filter(n => n.isRead).map(n => n.id));
+    }
+  }, [ready, readNotificationIds.length]);
 
   const markAllRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    setReadNotificationIds(INITIAL_NOTIFICATIONS.map(n => n.id));
   };
 
   const toggleItemRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(n => (n.id === id ? { ...n, isRead: !n.isRead } : n))
+    const isRead = readNotificationIds.includes(id);
+    setReadNotificationIds(
+      isRead ? readNotificationIds.filter(existing => existing !== id) : [...readNotificationIds, id]
     );
   };
+
+  const isReadNotification = (id: string) => readNotificationIds.includes(id);
 
   const getIcon = (type: AppNotification['type']) => {
     switch (type) {
@@ -111,8 +124,8 @@ export const NotificationsScreen: React.FC<{ navigation: any }> = ({ navigation 
               style={[
                 styles.itemCard,
                 {
-                  backgroundColor: item.isRead ? colors.surface : colors.badgeBg,
-                  borderColor: item.isRead ? colors.border : colors.primary,
+                  backgroundColor: isReadNotification(item.id) ? colors.surface : colors.badgeBg,
+                  borderColor: isReadNotification(item.id) ? colors.border : colors.primary,
                 },
               ]}
               onPress={() => toggleItemRead(item.id)}
@@ -121,7 +134,7 @@ export const NotificationsScreen: React.FC<{ navigation: any }> = ({ navigation 
               <View style={styles.textContainer}>
                 <View style={styles.itemHeader}>
                   <Text style={[styles.itemTitle, { color: colors.textPrimary }]}>{item.title}</Text>
-                  {!item.isRead && (
+                  {!isReadNotification(item.id) && (
                     <View style={[styles.unreadDot, { backgroundColor: colors.primary }]} />
                   )}
                 </View>

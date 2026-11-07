@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,20 +10,40 @@ import {
 } from 'react-native';
 import { useAppTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { INITIAL_LESSONS } from '../data/curriculumData';
+import { useAppData } from '../context/AppDataContext';
+
+const CLASSES_BY_LEVEL = {
+  primaire: ['CI', 'CP1', 'CP2', 'CE1', 'CE2', 'CM1', 'CM2'],
+  college: ['6e', '5e', '4e', '3e'],
+  lycee: ['2nde', '1ère', 'Tle'],
+};
+
+type Level = keyof typeof CLASSES_BY_LEVEL;
+
+const levelOfClass = (gradeClass: string): Level => {
+  if (CLASSES_BY_LEVEL.primaire.includes(gradeClass)) return 'primaire';
+  if (CLASSES_BY_LEVEL.lycee.includes(gradeClass)) return 'lycee';
+  return 'college';
+};
 
 export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { colors, isDark, toggleTheme } = useAppTheme();
   const { currentUser, isOwnerOrAdmin } = useAuth();
+  const { lessons, selectedClass: savedClass, setSelectedClass: saveClass } = useAppData();
 
-  const [selectedLevel, setSelectedLevel] = useState<'primaire' | 'college' | 'lycee'>('college');
-  const [selectedClass, setSelectedClass] = useState<string>('4e');
+  const [selectedLevel, setSelectedLevel] = useState<Level>(() =>
+    levelOfClass(savedClass || '4e')
+  );
+  const selectedClass = savedClass || '4e';
 
-  const classesByLevel = {
-    primaire: ['CI', 'CP1', 'CP2', 'CE1', 'CE2', 'CM1', 'CM2'],
-    college: ['6e', '5e', '4e', '3e'],
-    lycee: ['2nde', '1ère', 'Tle'],
-  };
+  useEffect(() => {
+    if (savedClass) setSelectedLevel(levelOfClass(savedClass));
+  }, [savedClass]);
+
+  const classesByLevel = CLASSES_BY_LEVEL;
+
+  const recommendedLesson =
+    lessons.find(l => l.published && l.gradeClass === selectedClass) || lessons[0];
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -118,7 +138,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                 ]}
                 onPress={() => {
                   setSelectedLevel(level);
-                  setSelectedClass(classesByLevel[level][0]);
+                  saveClass(classesByLevel[level][0]);
                 }}
               >
                 <Text
@@ -148,7 +168,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                     borderColor: isClsActive ? colors.accent : colors.border,
                   },
                 ]}
-                onPress={() => setSelectedClass(cls)}
+                onPress={() => saveClass(cls)}
               >
                 <Text
                   style={[
@@ -227,7 +247,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
         {/* Featured Lesson */}
         <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Leçon Recommandée</Text>
-        {INITIAL_LESSONS.slice(0, 1).map(lesson => (
+        {(recommendedLesson ? [recommendedLesson] : []).map(lesson => (
           <TouchableOpacity
             key={lesson.id}
             style={[styles.lessonCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
@@ -237,7 +257,9 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               <View style={[styles.subjectTag, { backgroundColor: colors.badgeBg }]}>
                 <Text style={[styles.subjectTagText, { color: colors.primary }]}>{lesson.subject}</Text>
               </View>
-              <Text style={[styles.durationText, { color: colors.textMuted }]}>⏱ {lesson.durationMinutes} min</Text>
+              <Text style={[styles.durationText, { color: colors.textMuted }]}>
+                {lesson.gradeClass} • ⏱ {lesson.durationMinutes} min
+              </Text>
             </View>
             <Text style={[styles.lessonTitle, { color: colors.textPrimary }]}>{lesson.title}</Text>
             <Text style={[styles.lessonSummary, { color: colors.textSecondary }]}>{lesson.summary}</Text>

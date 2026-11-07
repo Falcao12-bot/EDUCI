@@ -8,22 +8,25 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useAppTheme } from '../context/ThemeContext';
+import { useAppData } from '../context/AppDataContext';
 import { INITIAL_EXERCISES } from '../data/curriculumData';
 
 export const ExercisesScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const { progress, recordExerciseResult, clearExerciseResult } = useAppData();
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
-  const [validated, setValidated] = useState<Record<string, boolean>>({});
+
+  const successCount = INITIAL_EXERCISES.filter(ex => progress.exerciseResults[ex.id]?.correct).length;
 
   const handleSelectOption = (exerciseId: string, optionIndex: number) => {
-    if (validated[exerciseId]) return;
+    if (progress.exerciseResults[exerciseId]) return;
     setSelectedAnswers(prev => ({ ...prev, [exerciseId]: optionIndex }));
   };
 
-  const handleValidate = (exerciseId: string) => {
-    if (selectedAnswers[exerciseId] !== undefined) {
-      setValidated(prev => ({ ...prev, [exerciseId]: true }));
-    }
+  const handleValidate = (exerciseId: string, correctOptionIndex: number) => {
+    const selected = selectedAnswers[exerciseId];
+    if (selected === undefined) return;
+    recordExerciseResult(exerciseId, { selected, correct: selected === correctOptionIndex });
   };
 
   const handleReset = (exerciseId: string) => {
@@ -32,11 +35,7 @@ export const ExercisesScreen: React.FC = () => {
       delete copy[exerciseId];
       return copy;
     });
-    setValidated(prev => {
-      const copy = { ...prev };
-      delete copy[exerciseId];
-      return copy;
-    });
+    clearExerciseResult(exerciseId);
   };
 
   return (
@@ -47,10 +46,19 @@ export const ExercisesScreen: React.FC = () => {
           Testez vos connaissances en temps réel avec explications pédagogiques détaillées.
         </Text>
 
+        {successCount > 0 && (
+          <View style={[styles.progressBanner, { backgroundColor: colors.badgeBg, borderColor: colors.primary }]}>
+            <Text style={[styles.progressText, { color: colors.primary }]}>
+              🎯 {successCount}/{INITIAL_EXERCISES.length} exercice(s) réussi(s) — progression enregistrée
+            </Text>
+          </View>
+        )}
+
         {INITIAL_EXERCISES.map((ex, index) => {
-          const selected = selectedAnswers[ex.id];
-          const isValidated = validated[ex.id];
-          const isCorrect = selected === ex.correctOptionIndex;
+          const storedResult = progress.exerciseResults[ex.id];
+          const selected = selectedAnswers[ex.id] ?? storedResult?.selected;
+          const isValidated = storedResult !== undefined;
+          const isCorrect = isValidated ? storedResult.correct : selected === ex.correctOptionIndex;
 
           return (
             <View key={ex.id} style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -135,7 +143,7 @@ export const ExercisesScreen: React.FC = () => {
                         backgroundColor: selected !== undefined ? colors.primary : colors.border,
                       },
                     ]}
-                    onPress={() => handleValidate(ex.id)}
+                    onPress={() => handleValidate(ex.id, ex.correctOptionIndex)}
                     disabled={selected === undefined}
                   >
                     <Text style={styles.actionBtnText}>Vérifier ma réponse</Text>
@@ -162,6 +170,8 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 16, paddingBottom: 40 },
   headerTitle: { fontSize: 20, fontWeight: '800', marginBottom: 4 },
   headerSubtitle: { fontSize: 13, marginBottom: 16 },
+  progressBanner: { padding: 10, borderRadius: 10, borderWidth: 1, marginBottom: 14 },
+  progressText: { fontSize: 12, fontWeight: '700', textAlign: 'center' },
   card: { padding: 16, borderRadius: 16, borderWidth: 1, marginBottom: 16 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },

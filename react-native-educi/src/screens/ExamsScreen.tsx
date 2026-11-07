@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useAppTheme } from '../context/ThemeContext';
 import { INITIAL_EXAMS } from '../data/curriculumData';
+import { MarkdownText } from '../components/MarkdownText';
 
 export const ExamsScreen: React.FC = () => {
   const { colors } = useAppTheme();
@@ -91,7 +92,7 @@ export const ExamsScreen: React.FC = () => {
 
                 {/* Content Box */}
                 <View style={[styles.contentBox, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
-                  <Text style={[styles.contentText, { color: colors.textPrimary }]}>{exam.content}</Text>
+                  <MarkdownText content={exam.content} />
                 </View>
 
                 {/* Solution Toggle Button */}
@@ -107,7 +108,7 @@ export const ExamsScreen: React.FC = () => {
                 {showSol && (
                   <View style={[styles.solutionBox, { backgroundColor: colors.badgeBg, borderColor: colors.primary }]}>
                     <Text style={[styles.solutionTitle, { color: colors.primary }]}>Corrigé & Barème Officiel :</Text>
-                    <Text style={[styles.solutionText, { color: colors.textPrimary }]}>{exam.solution}</Text>
+                    <MarkdownText content={exam.solution} />
                   </View>
                 )}
               </View>

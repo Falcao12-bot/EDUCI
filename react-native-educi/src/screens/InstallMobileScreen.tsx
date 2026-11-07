@@ -13,6 +13,7 @@ import {
   Platform,
 } from 'react-native';
 import { useAppTheme } from '../context/ThemeContext';
+import { useFeedback } from '../context/FeedbackContext';
 
 const GITHUB_REPO = 'https://github.com/Falcao12-bot/EDUCI';
 const APK_RELEASES_URL = `${GITHUB_REPO}/releases`;
@@ -27,6 +28,7 @@ const getAppUrl = (): string => {
 
 export const InstallMobileScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { colors } = useAppTheme();
+  const { notify } = useFeedback();
   const [activeTab, setActiveTab] = useState<'qr' | 'apk' | 'pwa' | 'expo'>('qr');
 
   const handleShare = async () => {
@@ -57,12 +59,12 @@ export const InstallMobileScreen: React.FC<{ navigation: any }> = ({ navigation 
     if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard) {
       try {
         await navigator.clipboard.writeText(message);
-        Alert.alert('✅ Copié', 'Le lien a été copié dans le presse-papiers. Collez-le dans WhatsApp ou SMS.');
+        notify('✅ Copié', 'Le lien a été copié dans le presse-papiers. Collez-le dans WhatsApp ou SMS.');
       } catch {
-        Alert.alert('Erreur', 'Impossible de partager le lien.');
+        notify('Erreur', 'Impossible de partager le lien.');
       }
     } else {
-      Alert.alert('Erreur', 'Impossible de partager le lien.');
+      notify('Erreur', 'Impossible de partager le lien.');
     }
   };
 
@@ -72,7 +74,7 @@ export const InstallMobileScreen: React.FC<{ navigation: any }> = ({ navigation 
       window.open(url, '_blank');
     } else {
       Linking.openURL(url).catch(() => {
-        Alert.alert('Erreur', "Impossible d'ouvrir l'adresse.");
+        notify('Erreur', "Impossible d'ouvrir l'adresse.");
       });
     }
   };
@@ -82,7 +84,7 @@ export const InstallMobileScreen: React.FC<{ navigation: any }> = ({ navigation 
       window.open(APK_RELEASES_URL, '_blank');
     } else {
       Linking.openURL(APK_RELEASES_URL).catch(() => {
-        Alert.alert('Erreur', "Impossible d'accéder au téléchargement.");
+        notify('Erreur', "Impossible d'accéder au téléchargement.");
       });
     }
   };

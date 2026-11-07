@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,15 +9,20 @@ import {
   SafeAreaView,
   Alert,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppTheme } from '../context/ThemeContext';
-import { useAuth, OWNER_EMAIL, OWNER_MASTER_KEY } from '../context/AuthContext';
-import { INITIAL_LESSONS, Lesson, INITIAL_EXERCISES } from '../data/curriculumData';
+import { useAuth, OWNER_EMAIL, OWNER_MASTER_KEY, User } from '../context/AuthContext';
+import { useAppData } from '../context/AppDataContext';
+import { Lesson, INITIAL_EXERCISES } from '../data/curriculumData';
 import { EditeurBlocs } from '../components/EditeurBlocs';
 import { RichBlock } from '../data/richBlocks';
+import { useFeedback } from '../context/FeedbackContext';
 
-export const AdminScreen: React.FC = () => {
+export const AdminScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { colors } = useAppTheme();
   const { currentUser, isOwnerOrAdmin, claimOwnerAccess } = useAuth();
+  const { lessons, addLesson, deleteLesson } = useAppData();
+  const { notify, confirmAction } = useFeedback();
 
   const [inputKey, setInputKey] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -33,7 +38,20 @@ export const AdminScreen: React.FC = () => {
   const [lessonSummary, setLessonSummary] = useState('');
   const [lessonBlocks, setLessonBlocks] = useState<RichBlock[]>([]);
 
-  const [lessonsList, setLessonsList] = useState<Lesson[]>(INITIAL_LESSONS);
+  // Comptes réellement inscrits sur cet appareil
+  const [registeredUsers, setRegisteredUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    if (!isOwnerOrAdmin) return;
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem('@educi_registered_users');
+        setRegisteredUsers(raw ? JSON.parse(raw) : []);
+      } catch {
+        setRegisteredUsers([]);
+      }
+    })();
+  }, [isOwnerOrAdmin]);
 
   // Security gate: If not verified owner/admin
   if (!isOwnerOrAdmin) {
@@ -42,7 +60,7 @@ export const AdminScreen: React.FC = () => {
         const success = claimOwnerAccess(inputKey.trim());
         if (success) {
           setErrorMessage('');
-          Alert.alert('Succès', 'Accès Propriétaire déverrouillé avec succès !');
+          notify('Succès', 'Accès Propriétaire déverrouillé avec succès !');
         }
       } else {
         setErrorMessage('Clé secrète incorrecte. Seul le propriétaire légitime possède cette clé.');
@@ -51,6 +69,9 @@ export const AdminScreen: React.FC = () => {
 
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.gateBack}>
+          <Text style={[styles.gateBackText, { color: colors.primary }]}>← Retour</Text>
+        </TouchableOpacity>
         <ScrollView contentContainerStyle={styles.gateScroll}>
           <View style={[styles.gateCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <Text style={styles.gateLockIcon}>🔒</Text>
@@ -110,11 +131,11 @@ export const AdminScreen: React.FC = () => {
   // Admin / Owner Dashboard
   const handleAddLesson = () => {
     if (!lessonTitle.trim() || !lessonChapter.trim()) {
-      Alert.alert('Erreur', 'Veuillez remplir au moins le titre et le chapitre.');
+      notify('Erreur', 'Veuillez remplir au moins le titre et le chapitre.');
       return;
     }
     if (lessonBlocks.length === 0) {
-      Alert.alert('Erreur', 'Ajoutez au moins un bloc pédagogique (titre, texte, tableau...) avec l\'éditeur riche.');
+      notify('Erreur', 'Ajoutez au moins un bloc pédagogique (titre, texte, tableau...) avec l\'éditeur riche.');
       return;
     }
 
@@ -137,29 +158,23 @@ export const AdminScreen: React.FC = () => {
       blocks: lessonBlocks,
     };
 
-    setLessonsList(prev => [newLesson, ...prev]);
+    addLesson(newLesson);
     setLessonTitle('');
     setLessonChapter('');
     setLessonSummary('');
     setLessonBlocks([]);
-    Alert.alert('Succès', 'Nouvelle leçon publiée avec succès dans le programme !');
+    notify('Succès', 'Nouvelle leçon publiée : elle est maintenant visible dans l\'onglet Cours.');
   };
 
   const handleDeleteLesson = (id: string) => {
-    Alert.alert(
+    confirmAction(
       'Confirmer la suppression',
       'Êtes-vous sûr de vouloir supprimer cette leçon ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Supprimer',
-          style: 'destructive',
-          onPress: () => {
-            setLessonsList(prev => prev.filter(l => l.id !== id));
-            Alert.alert('Succès', 'Leçon supprimée.');
-          },
-        },
-      ]
+      () => {
+        deleteLesson(id);
+        notify('Succès', 'Leçon supprimée.');
+      },
+      'Supprimer la leçon'
     );
   };
 
@@ -167,7 +182,10 @@ export const AdminScreen: React.FC = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[styles.adminHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <View>
+        <TouchableOpacity onPress={() => navigation.goBack()} accessibilityLabel="Retour">
+          <Text style={[styles.headerBackText, { color: colors.primary }]}>←</Text>
+        </TouchableOpacity>
+        <View style={{ flex: 1 }}>
           <Text style={[styles.adminHeaderTitle, { color: colors.primary }]}>Console Propriétaire EduCI</Text>
           <Text style={[styles.adminHeaderSub, { color: colors.textMuted }]}>
             Connecté : {currentUser?.email || OWNER_EMAIL}
@@ -268,9 +286,9 @@ export const AdminScreen: React.FC = () => {
 
             {/* Existing Lessons List with Delete */}
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-              Gestion des Leçons ({lessonsList.length})
+              Gestion des Leçons ({lessons.length})
             </Text>
-            {lessonsList.map(item => (
+            {lessons.map(item => (
               <View key={item.id} style={[styles.itemRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.itemTitle, { color: colors.textPrimary }]}>{item.title}</Text>
@@ -317,6 +335,32 @@ export const AdminScreen: React.FC = () => {
                 Compte Maître Fondateur : {OWNER_EMAIL} (Rôle : Propriétaire Unique).
               </Text>
             </View>
+
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary, marginTop: 16 }]}>
+              {registeredUsers.length} compte(s) inscrit(s)
+            </Text>
+            {registeredUsers.length === 0 ? (
+              <Text style={[styles.itemSub, { color: colors.textMuted }]}>
+                Aucun élève inscrit pour le moment.
+              </Text>
+            ) : (
+              registeredUsers.map(user => (
+                <View
+                  key={user.id}
+                  style={[styles.itemRow, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.itemTitle, { color: colors.textPrimary }]}>{user.name}</Text>
+                    <Text style={[styles.itemSub, { color: colors.textMuted }]}>
+                      {user.email} • {user.gradeClass} • {user.schoolName}
+                    </Text>
+                  </View>
+                  <Text style={[styles.itemSub, { color: colors.primary, fontWeight: '700' }]}>
+                    {user.role === 'owner' ? '👑 Propriétaire' : user.role === 'admin' ? 'Admin' : 'Élève'}
+                  </Text>
+                </View>
+              ))
+            )}
           </View>
         )}
       </ScrollView>
@@ -326,6 +370,9 @@ export const AdminScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  gateBack: { paddingHorizontal: 20, paddingTop: 16 },
+  gateBackText: { fontSize: 15, fontWeight: '700' },
+  headerBackText: { fontSize: 22, fontWeight: '700', paddingRight: 12 },
   gateScroll: { flexGrow: 1, justifyContent: 'center', padding: 20 },
   gateCard: { padding: 24, borderRadius: 20, borderWidth: 1, alignItems: 'center' },
   gateLockIcon: { fontSize: 48, marginBottom: 12 },

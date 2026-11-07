@@ -9,27 +9,29 @@ import {
   Alert,
 } from 'react-native';
 import { useAppTheme, ThemeMode } from '../context/ThemeContext';
-import { useAuth, OWNER_EMAIL } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
+import { useAppData } from '../context/AppDataContext';
+import { INITIAL_EXERCISES } from '../data/curriculumData';
+import { useFeedback } from '../context/FeedbackContext';
 
 export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { colors, mode, setMode } = useAppTheme();
   const { currentUser, isOwnerOrAdmin, logout } = useAuth();
+  const { lessons, progress } = useAppData();
+  const { confirmAction } = useFeedback();
+
+  const completedLessons = lessons.filter(l => progress.completedLessons.includes(l.id)).length;
+  const successfulExercises = INITIAL_EXERCISES.filter(ex => progress.exerciseResults[ex.id]?.correct).length;
 
   const handleLogout = () => {
-    Alert.alert(
+    confirmAction(
       'Déconnexion',
       'Voulez-vous vraiment vous déconnecter ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Déconnexion',
-          style: 'destructive',
-          onPress: async () => {
-            await logout();
-            navigation.navigate('Auth');
-          },
-        },
-      ]
+      async () => {
+        await logout();
+        navigation.navigate('Auth');
+      },
+      'Déconnexion'
     );
   };
 
@@ -56,6 +58,29 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
               </Text>
             </View>
           )}
+        </View>
+
+        {/* Learning Progress */}
+        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Ma Progression</Text>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={styles.statsRow}>
+            <View style={styles.statBox}>
+              <Text style={[styles.statValue, { color: colors.primary }]}>{completedLessons}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                leçon(s) terminée(s){'\n'}sur {lessons.length}
+              </Text>
+            </View>
+            <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+            <View style={styles.statBox}>
+              <Text style={[styles.statValue, { color: colors.accent }]}>{successfulExercises}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                exercice(s) réussi(s){'\n'}sur {INITIAL_EXERCISES.length}
+              </Text>
+            </View>
+          </View>
+          <Text style={[styles.cardSub, { color: colors.textMuted, marginBottom: 0 }]}>
+            Votre progression est enregistrée automatiquement sur cet appareil.
+          </Text>
         </View>
 
         {/* Theme Settings (Mode Clair Vert-Blanc / Mode Sombre / Système) */}
@@ -171,6 +196,11 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 10 },
   card: { padding: 16, borderRadius: 14, borderWidth: 1, marginBottom: 20 },
   cardSub: { fontSize: 13, marginBottom: 14, lineHeight: 18 },
+  statsRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  statBox: { flex: 1, alignItems: 'center' },
+  statValue: { fontSize: 26, fontWeight: '800' },
+  statLabel: { fontSize: 12, textAlign: 'center', marginTop: 2, lineHeight: 16 },
+  statDivider: { width: 1, height: 46 },
   themeRow: { gap: 10 },
   themeOption: { paddingVertical: 12, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1 },
   themeOptionText: { fontSize: 14 },

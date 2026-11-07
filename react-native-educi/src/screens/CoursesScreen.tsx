@@ -9,19 +9,37 @@ import {
   Modal,
 } from 'react-native';
 import { useAppTheme } from '../context/ThemeContext';
-import { INITIAL_LESSONS, Lesson } from '../data/curriculumData';
+import { useAppData } from '../context/AppDataContext';
+import { Lesson } from '../data/curriculumData';
 import { ContenuRich } from '../components/ContenuRich';
+import { MarkdownText } from '../components/MarkdownText';
+import { useFeedback } from '../context/FeedbackContext';
+import { sortClasses } from '../utils/classes';
 
 export const CoursesScreen: React.FC = () => {
   const { colors } = useAppTheme();
+  const { lessons, progress, toggleLessonCompleted } = useAppData();
+  const { notify } = useFeedback();
   const [selectedSubject, setSelectedSubject] = useState<string>('Tous');
+  const [classFilter, setClassFilter] = useState<string>('Toutes');
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
 
   const subjects = ['Tous', 'Mathématiques', 'Physique-Chimie', 'Français', 'SVT'];
 
-  const filteredLessons = selectedSubject === 'Tous'
-    ? INITIAL_LESSONS
-    : INITIAL_LESSONS.filter(l => l.subject === selectedSubject);
+  const publishedLessons = lessons.filter(l => l.published);
+  const classFilters = [
+    'Toutes',
+    ...sortClasses(publishedLessons.map(l => l.gradeClass)),
+  ];
+  const activeClassFilter = classFilters.includes(classFilter) ? classFilter : 'Toutes';
+
+  const filteredLessons = publishedLessons.filter(
+    lesson =>
+      (selectedSubject === 'Tous' || lesson.subject === selectedSubject) &&
+      (activeClassFilter === 'Toutes' || lesson.gradeClass === activeClassFilter)
+  );
+
+  const isCompleted = (lessonId: string) => progress.completedLessons.includes(lessonId);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -56,9 +74,40 @@ export const CoursesScreen: React.FC = () => {
         </ScrollView>
       </View>
 
+      {/* Class filter bar */}
+      <View style={[styles.classBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+          {classFilters.map(cls => {
+            const active = activeClassFilter === cls;
+            return (
+              <TouchableOpacity
+                key={cls}
+                style={[
+                  styles.classChip,
+                  {
+                    backgroundColor: active ? colors.accent : colors.surfaceVariant,
+                    borderColor: active ? colors.accent : colors.border,
+                  },
+                ]}
+                onPress={() => setClassFilter(cls)}
+              >
+                <Text
+                  style={[
+                    styles.classChipText,
+                    { color: active ? '#FFFFFF' : colors.textPrimary, fontWeight: active ? '700' : '500' },
+                  ]}
+                >
+                  {cls === 'Toutes' ? 'Toutes les classes' : `Classe de ${cls}`}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+
       <ScrollView contentContainerStyle={styles.listContent}>
         <Text style={[styles.countText, { color: colors.textMuted }]}>
-          {filteredLessons.length} leçons disponibles selon le programme officiel
+          {filteredLessons.length} leçon(s) disponible(s) selon le programme officiel
         </Text>
 
         {filteredLessons.map(lesson => (
@@ -71,9 +120,14 @@ export const CoursesScreen: React.FC = () => {
               <View style={[styles.badge, { backgroundColor: colors.badgeBg }]}>
                 <Text style={[styles.badgeText, { color: colors.primary }]}>{lesson.subject}</Text>
               </View>
-              <Text style={[styles.metaText, { color: colors.textMuted }]}>
-                {lesson.gradeClass} • {lesson.durationMinutes} min
-              </Text>
+              <View style={styles.metaRow}>
+                {isCompleted(lesson.id) && (
+                  <Text style={[styles.doneTag, { color: colors.success }]}>✓ Terminée</Text>
+                )}
+                <Text style={[styles.metaText, { color: colors.textMuted }]}>
+                  {lesson.gradeClass} • {lesson.durationMinutes} min
+                </Text>
+              </View>
             </View>
             <Text style={[styles.title, { color: colors.textPrimary }]}>{lesson.title}</Text>
             <Text style={[styles.chapter, { color: colors.accent }]}>Chapitre : {lesson.chapter}</Text>
@@ -104,19 +158,36 @@ export const CoursesScreen: React.FC = () => {
             {activeLesson?.blocks && activeLesson.blocks.length > 0 ? (
               <ContenuRich blocks={activeLesson.blocks} />
             ) : (
-              <Text style={[styles.lessonContentText, { color: colors.textPrimary }]}>
-                {activeLesson?.content}
-              </Text>
+              <MarkdownText content={activeLesson?.content} />
             )}
 
             <TouchableOpacity
-              style={[styles.completeBtn, { backgroundColor: colors.primary }]}
+              style={[
+                styles.completeBtn,
+                { backgroundColor: activeLesson && isCompleted(activeLesson.id) ? colors.surfaceVariant : colors.primary,
+                  borderColor: colors.primary, borderWidth: 1 },
+              ]}
               onPress={() => {
-                alert('Félicitations ! Leçon marquée comme comprise.');
+                if (!activeLesson) return;
+                const wasCompleted = isCompleted(activeLesson.id);
+                toggleLessonCompleted(activeLesson.id);
+                notify(
+                  wasCompleted ? 'Leçon rouverte' : 'Leçon terminée ✓',
+                  wasCompleted
+                    ? 'Cette leçon n\'est plus marquée comme terminée.'
+                    : 'Félicitations ! Votre progression est enregistrée.'
+                );
                 setActiveLesson(null);
               }}
             >
-              <Text style={styles.completeBtnText}>✓ Marquer comme terminée</Text>
+              <Text
+                style={[
+                  styles.completeBtnText,
+                  { color: activeLesson && isCompleted(activeLesson.id) ? colors.primary : '#FFFFFF' },
+                ]}
+              >
+                {activeLesson && isCompleted(activeLesson.id) ? '↺ Retirer de mes leçons terminées' : '✓ Marquer comme terminée'}
+              </Text>
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
@@ -130,6 +201,11 @@ const styles = StyleSheet.create({
   filterBar: { paddingVertical: 10, paddingHorizontal: 16, borderBottomWidth: 1 },
   filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, borderWidth: 1, marginRight: 8 },
   filterChipText: { fontSize: 13 },
+  classBar: { paddingVertical: 8, paddingHorizontal: 16, borderBottomWidth: 1 },
+  classChip: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14, borderWidth: 1, marginRight: 8 },
+  classChipText: { fontSize: 12 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  doneTag: { fontSize: 12, fontWeight: '700' },
   listContent: { padding: 16, paddingBottom: 40 },
   countText: { fontSize: 12, marginBottom: 12 },
   card: { padding: 16, borderRadius: 14, borderWidth: 1, marginBottom: 12 },

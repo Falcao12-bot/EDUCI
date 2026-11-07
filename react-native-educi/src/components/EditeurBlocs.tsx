@@ -215,7 +215,7 @@ function blockEditor(
     toggleListOrder: (i: number) => void;
   }
 ) {
-  const input = (value: string, onCh: (t: string) => void, ph: string, extra?: object) => (
+  const input = (value: string, onCh: (t: string) => void, ph: string, extra?: { height?: number; flex?: number }) => (
     <TextInput
       style={[
         styles.editInput,

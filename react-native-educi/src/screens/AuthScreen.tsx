@@ -11,10 +11,12 @@ import {
 } from 'react-native';
 import { useAppTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useFeedback } from '../context/FeedbackContext';
 
 export const AuthScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { colors } = useAppTheme();
   const { login, register } = useAuth();
+  const { notify } = useFeedback();
 
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [name, setName] = useState('');
@@ -27,27 +29,27 @@ export const AuthScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   const handleSubmit = async () => {
     if (!email.trim()) {
-      Alert.alert('Erreur', 'Veuillez saisir votre adresse email.');
+      notify('Erreur', 'Veuillez saisir votre adresse email.');
       return;
     }
 
     setLoading(true);
     if (isRegisterMode) {
       if (!name.trim()) {
-        Alert.alert('Erreur', 'Veuillez renseigner votre nom complet.');
+        notify('Erreur', 'Veuillez renseigner votre nom complet.');
         setLoading(false);
         return;
       }
       const res = await register(name, email, gradeClass, schoolName, masterKey);
       setLoading(false);
-      Alert.alert(res.success ? 'Succès' : 'Information', res.message);
+      notify(res.success ? 'Succès' : 'Information', res.message);
       if (res.success) {
         navigation.navigate('MainTabs');
       }
     } else {
       const res = await login(email, masterKey);
       setLoading(false);
-      Alert.alert(res.success ? 'Bienvenue' : 'Erreur', res.message);
+      notify(res.success ? 'Bienvenue' : 'Erreur', res.message);
       if (res.success) {
         navigation.navigate('MainTabs');
       }
@@ -56,6 +58,10 @@ export const AuthScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <Text style={[styles.backBtnText, { color: colors.primary }]}>← Retour</Text>
+      </TouchableOpacity>
+
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Logo & Intro */}
         <View style={styles.brandHeader}>
@@ -172,6 +178,8 @@ export const AuthScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  backBtn: { paddingHorizontal: 20, paddingTop: 16 },
+  backBtnText: { fontSize: 15, fontWeight: '700' },
   scrollContent: { padding: 20, justifyContent: 'center' },
   brandHeader: { alignItems: 'center', marginBottom: 24, marginTop: 20 },
   brandTitle: { fontSize: 32, fontWeight: '900', letterSpacing: 1 },

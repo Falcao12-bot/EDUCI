@@ -7,6 +7,8 @@ import { StatusBar } from 'expo-status-bar';
 
 import { ThemeProvider, useAppTheme } from './src/context/ThemeContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { AppDataProvider } from './src/context/AppDataContext';
+import { FeedbackProvider } from './src/context/FeedbackContext';
 
 import { HomeScreen } from './src/screens/HomeScreen';
 import { CoursesScreen } from './src/screens/CoursesScreen';
@@ -120,7 +122,11 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <NavigationRoot />
+        <AppDataProvider>
+          <FeedbackProvider>
+            <NavigationRoot />
+          </FeedbackProvider>
+        </AppDataProvider>
       </AuthProvider>
     </ThemeProvider>
   );

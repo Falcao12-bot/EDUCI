@@ -10,10 +10,14 @@ import {
   Modal,
 } from 'react-native';
 import { useAppTheme } from '../context/ThemeContext';
-import { INITIAL_LESSONS, INITIAL_EXAMS, INITIAL_EXERCISES, Lesson, Exam } from '../data/curriculumData';
+import { useAppData } from '../context/AppDataContext';
+import { INITIAL_EXAMS, INITIAL_EXERCISES, Lesson, Exam } from '../data/curriculumData';
+import { ContenuRich } from '../components/ContenuRich';
+import { MarkdownText } from '../components/MarkdownText';
 
 export const SearchScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { colors } = useAppTheme();
+  const { lessons } = useAppData();
   const [query, setQuery] = useState('');
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [activeExam, setActiveExam] = useState<Exam | null>(null);
@@ -22,14 +26,14 @@ export const SearchScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   const lessonResults = useMemo(() => {
     if (!trimmed) return [];
-    return INITIAL_LESSONS.filter(
+    return lessons.filter(
       l =>
         l.title.toLowerCase().includes(trimmed) ||
         l.subject.toLowerCase().includes(trimmed) ||
         l.chapter.toLowerCase().includes(trimmed) ||
         l.summary.toLowerCase().includes(trimmed)
     );
-  }, [trimmed]);
+  }, [trimmed, lessons]);
 
   const examResults = useMemo(() => {
     if (!trimmed) return [];
@@ -178,7 +182,7 @@ export const SearchScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                     </View>
                     <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{ex.question}</Text>
                     <Text style={[styles.cardSummary, { color: colors.textSecondary }]}>
-                      Réponse correcte : {ex.options[ex.correctOptionIndex]}
+                      Quiz auto-corrigé • Difficulté {ex.difficulty} — entraînez-vous dans l'onglet Exercices.
                     </Text>
                   </View>
                 ))}
@@ -213,9 +217,11 @@ export const SearchScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               {activeLesson?.subject} • {activeLesson?.gradeClass} • {activeLesson?.chapter}
             </Text>
             <View style={[styles.modalDivider, { backgroundColor: colors.border }]} />
-            <Text style={[styles.modalContent, { color: colors.textPrimary }]}>
-              {activeLesson?.content}
-            </Text>
+            {activeLesson?.blocks && activeLesson.blocks.length > 0 ? (
+              <ContenuRich blocks={activeLesson.blocks} />
+            ) : (
+              <MarkdownText content={activeLesson?.content} />
+            )}
           </ScrollView>
         </SafeAreaView>
       </Modal>
@@ -239,14 +245,10 @@ export const SearchScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               {activeExam?.instructions}
             </Text>
             <View style={[styles.modalDivider, { backgroundColor: colors.border }]} />
-            <Text style={[styles.modalContent, { color: colors.textPrimary }]}>
-              {activeExam?.content}
-            </Text>
+            <MarkdownText content={activeExam?.content} />
             <View style={[styles.solutionBox, { backgroundColor: colors.surfaceVariant, borderColor: colors.border }]}>
               <Text style={[styles.solutionTitle, { color: colors.primary }]}>Corrigé indicatif :</Text>
-              <Text style={[styles.modalContent, { color: colors.textPrimary }]}>
-                {activeExam?.solution}
-              </Text>
+              <MarkdownText content={activeExam?.solution} />
             </View>
           </ScrollView>
         </SafeAreaView>
